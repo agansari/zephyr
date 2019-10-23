@@ -11,3 +11,5 @@ zephyr_library_include_directories(
   ${ZEPHYR_BASE}/kernel/include
   ${ZEPHYR_BASE}/arch/${ARCH}/include
   )
+
+zephyr_sources_ifdef(CONFIG_ARM_MPU arm_mpu_regions.c)
