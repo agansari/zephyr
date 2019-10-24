@@ -69,6 +69,12 @@ static ALWAYS_INLINE void clock_init(void)
 	RESET_PeripheralReset(kHSLSPI_RST_SHIFT_RSTn);
 #endif /* CONFIG_SPI_8 */
 
+	/* Attach main clock to FLEXCOMM0 */
+	CLOCK_AttachClk(kMAIN_CLK_to_FLEXCOMM0);
+
+	/* reset FLEXCOMM for USART0 */
+	RESET_PeripheralReset(kFC0_RST_SHIFT_RSTn);
+
 #endif /* CONFIG_SOC_LPC55S69_CPU0 */
 }
 
