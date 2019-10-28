@@ -25,6 +25,7 @@
 #include <fsl_common.h>
 #include <fsl_device_registers.h>
 #include <fsl_pint.h>
+#include <cortex_m/tz.h>
 
 /**
  *
@@ -106,6 +107,10 @@ static int nxp_lpc55s69_init(struct device *arg)
 #ifdef CONFIG_GPIO_MCUX_LPC
 	/* Turn on PINT device*/
 	PINT_Init(PINT);
+#endif
+#ifdef CONFIG_CPU_HAS_ARM_SAU
+	/* Disable SAU device until security is properly configuration */
+	TZ_SAU_Disable();
 #endif
 
 	/*
