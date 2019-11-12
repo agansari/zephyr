@@ -1,0 +1,8 @@
+title: NXP LPC In Application Programming Flash Memory (IAP)
+
+description: |
+    This binding gives for the NXP LPC Flash Memory Controller
+
+compatible: "nxp,lpc-iap"
+
+include: flash-controller.yaml
