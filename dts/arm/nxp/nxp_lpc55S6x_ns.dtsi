@@ -52,27 +52,46 @@
 	};
 
 	sramx:memory@4000000{
+		/* Conencted to USB bus*/
+		compatible = "mmio-sram";
+		reg = <0x4000000 DT_SIZE_K(32)>;
+	};
+
+	sramx:memory@4000000{
+		/* connected to code bus */
 		compatible = "mmio-sram";
 		reg = <0x4000000 DT_SIZE_K(32)>;
 	};
 
 	soc {
 
-		flash0:flash@0 {
-			compatible = "soc-nv-flash";
-			reg = <0x00000000 DT_SIZE_K(630)>;
+		flash-controller@40034000 {
+			compatible = "nxp,lpc-iap";
+			label = "FLASH_IAP";
+			reg = <0x40034000 0x18>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			flash0: flash@0 {
+				compatible = "soc-nv-flash";
+				label = "MCUX_FLASH";
+				reg = <0x0 DT_SIZE_K(630)>;
+				erase-block-size = <512>;
+				write-block-size = <512>;
+			};
+
+			flash_reserved:flash@0009D800 {
+				compatible = "soc-nv-flash";
+				reg = <0x0009D800 DT_SIZE_K(10)>;
+				status = "disabled";
+			};
+
+			boot_rom:flash@3000000 {
+				compatible = "soc-nv-flash";
+				reg = <0x3000000 DT_SIZE_K(128)>;
+			};
 		};
 
-		flash_reserved:flash@0009D800 {
-			compatible = "soc-nv-flash";
-			reg = <0x0009D800 DT_SIZE_K(10)>;
-			status = "disabled";
-		};
-
-		boot_rom:flash@3000000 {
-			compatible = "soc-nv-flash";
-			reg = <0x3000000 DT_SIZE_K(128)>;
-		}
 
 		usart0:usart@40086000 {
 			compatible = "nxp,lpc-usart";
