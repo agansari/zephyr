@@ -63,6 +63,12 @@ config HAS_MCUX_FTFX
 	  Set if the flash memory (FTFA, FTFE, or FTFL) module is present in
 	  the SoC.
 
+config HAS_MCUX_IAP
+	bool
+	help
+	  Set if the flash memory In Applcation Programming is present in
+	  the LPC family SoCs.
+
 config HAS_MCUX_FTM
 	bool
 	help
