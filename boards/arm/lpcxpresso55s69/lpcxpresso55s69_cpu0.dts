@@ -17,6 +17,9 @@
 		/delete-node/ cpu@1;
 	};
 
+	/delete-node/ sram1;
+	/delete-node/ sram3;
+
 	aliases{
 		sw0 = &user_button_1;
 		sw1 = &user_button_2;
