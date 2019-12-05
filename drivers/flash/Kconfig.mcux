@@ -11,3 +11,16 @@ config SOC_FLASH_MCUX
 	  the duration of the flash erase/write operations. This will
 	  have an impact on the overall system performance - whether
 	  this is acceptable or not will depend on the use case.
+
+if SOC_FLASH_MCUX
+
+config SW_MANAGED_FLASH_WRITE
+	bool "MCUX flash software managed write"
+	default n
+	help
+		Allows writing custom flash sizes.
+		WARNING: This function is not safe, it may lead to corruption
+		if power is lost, and intensive use will shorten flash
+		memory's life.
+
+endif #SOC_FLASH_MCUX
