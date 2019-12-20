@@ -6,7 +6,7 @@
  */
 
 #define LOG_MODULE_NAME eth_enc28j60
-#define LOG_LEVEL CONFIG_ETHERNET_LOG_LEVEL
+#define LOG_LEVEL LOG_LEVEL_WARN
 
 #include <logging/log.h>
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
@@ -101,7 +101,7 @@ static void eth_enc28j60_read_reg(struct device *dev, u16_t reg_addr,
 {
 	struct eth_enc28j60_runtime *context = dev->driver_data;
 	u8_t buf[3];
-	const struct spi_buf tx_buf = {
+	struct spi_buf tx_buf = {
 		.buf = buf,
 		.len = 2
 	};
@@ -123,6 +123,7 @@ static void eth_enc28j60_read_reg(struct device *dev, u16_t reg_addr,
 	}
 
 	rx_buf.len = rx_size;
+	tx_buf.len = rx_size;
 
 	buf[0] = ENC28J60_SPI_RCR | (reg_addr & 0xFF);
 	buf[1] = 0x0;
@@ -292,16 +293,26 @@ static void eth_enc28j60_gpio_callback(struct device *dev,
 				       struct gpio_callback *cb,
 				       u32_t pins)
 {
+	printk(" >>> ISR cb\n");
 	struct eth_enc28j60_runtime *context =
 		CONTAINER_OF(cb, struct eth_enc28j60_runtime, gpio_cb);
 
 	k_sem_give(&context->int_sem);
 }
 
-static void eth_enc28j60_init_buffers(struct device *dev)
+static void eth_enc28j60_wait_for_ost(struct device *dev)
 {
 	u8_t data_estat;
 
+	do {
+		/* wait 1ms */
+		k_busy_wait(1000);
+		eth_enc28j60_read_reg(dev, ENC28J60_REG_ESTAT, &data_estat);
+	} while ((!(data_estat & ENC28J60_BIT_ESTAT_CLKRDY)) || (data_estat & (1<<3)));
+}
+
+static void eth_enc28j60_init_buffers(struct device *dev)
+{
 	/* Reception buffers initialization */
 	eth_enc28j60_set_bank(dev, ENC28J60_REG_ERXSTL);
 	eth_enc28j60_write_reg(dev, ENC28J60_REG_ERXSTL,
@@ -336,13 +347,6 @@ static void eth_enc28j60_init_buffers(struct device *dev)
 	eth_enc28j60_set_bank(dev, ENC28J60_REG_ERXFCON);
 	eth_enc28j60_write_reg(dev, ENC28J60_REG_ERXFCON,
 			       ENC28J60_RECEIVE_FILTERS);
-
-	/* Waiting for OST */
-	do {
-		/* wait 10.24 useconds */
-		k_busy_wait(D10D24S);
-		eth_enc28j60_read_reg(dev, ENC28J60_REG_ESTAT, &data_estat);
-	} while (!(data_estat & ENC28J60_BIT_ESTAT_CLKRDY));
 }
 
 static void eth_enc28j60_init_mac(struct device *dev)
@@ -378,21 +382,31 @@ static void eth_enc28j60_init_mac(struct device *dev)
 				       ENC28J60_MAC_BBIPG_HD);
 		eth_enc28j60_write_reg(dev, ENC28J60_REG_MACON4, 1 << 6);
 	}
+	// eth_enc28j60_write_reg(dev,ENC28J60_REG_MAMXFLL,0xEE);
+	// eth_enc28j60_write_reg(dev,ENC28J60_REG_MAMXFLH,0x05);
+
+	// Late collisions occur beyond 63+8 bytes (8 bytes for preamble/start of frame delimiter)
+    // 55 is all that is needed for IEEE 802.3, but ENC28J60 B5 errata for improper link pulse
+    // collisions will occur less often with a larger number.
+	eth_enc28j60_write_reg(dev,ENC28J60_REG_MACLCON2,63);
 
 	/* Configure MAC address */
-	eth_enc28j60_set_bank(dev, ENC28J60_REG_MAADR0);
-	eth_enc28j60_write_reg(dev, ENC28J60_REG_MAADR0,
+	eth_enc28j60_set_bank(dev, ENC28J60_REG_MAADR1);
+	eth_enc28j60_write_reg(dev, ENC28J60_REG_MAADR6,
 			       context->mac_address[5]);
-	eth_enc28j60_write_reg(dev, ENC28J60_REG_MAADR1,
+	eth_enc28j60_write_reg(dev, ENC28J60_REG_MAADR5,
 			       context->mac_address[4]);
-	eth_enc28j60_write_reg(dev, ENC28J60_REG_MAADR2,
+	eth_enc28j60_write_reg(dev, ENC28J60_REG_MAADR4,
 			       context->mac_address[3]);
 	eth_enc28j60_write_reg(dev, ENC28J60_REG_MAADR3,
 			       context->mac_address[2]);
-	eth_enc28j60_write_reg(dev, ENC28J60_REG_MAADR4,
+	eth_enc28j60_write_reg(dev, ENC28J60_REG_MAADR2,
 			       context->mac_address[1]);
-	eth_enc28j60_write_reg(dev, ENC28J60_REG_MAADR5,
+	eth_enc28j60_write_reg(dev, ENC28J60_REG_MAADR1,
 			       context->mac_address[0]);
+
+	// disable output clock
+	eth_enc28j60_write_reg(dev, ENC28J60_REG_ECOCON, 0);
 }
 
 static void eth_enc28j60_init_phy(struct device *dev)
@@ -419,6 +433,7 @@ static int eth_enc28j60_tx(struct device *dev, struct net_pkt *pkt)
 	u16_t tx_bufaddr_end;
 	struct net_buf *frag;
 	u8_t tx_end;
+	u8_t txerif;
 
 	LOG_DBG("pkt %p (len %u)", pkt, len);
 
@@ -436,6 +451,8 @@ static int eth_enc28j60_tx(struct device *dev, struct net_pkt *pkt)
 				 ENC28J60_BIT_ECON1_TXRST);
 	eth_enc28j60_clear_eth_reg(dev, ENC28J60_REG_ECON1,
 				   ENC28J60_BIT_ECON1_TXRST);
+	// eth_enc28j60_clear_eth_reg(dev, ENC28J60_REG_ECON1,
+	// 			   ENC28J60_BIT_ECON1_CSUMEN);
 
 	/* Write the buffer content into the transmission buffer */
 	eth_enc28j60_set_bank(dev, ENC28J60_REG_ETXSTL);
@@ -465,6 +482,7 @@ static int eth_enc28j60_tx(struct device *dev, struct net_pkt *pkt)
 		/* wait 10.24 useconds */
 		k_busy_wait(D10D24S);
 		eth_enc28j60_read_reg(dev, ENC28J60_REG_EIR, &tx_end);
+		txerif = tx_end & ENC28J60_BIT_EIR_TXERIF;
 		tx_end &= ENC28J60_BIT_EIR_TXIF;
 	} while (!tx_end);
 
@@ -473,7 +491,9 @@ static int eth_enc28j60_tx(struct device *dev, struct net_pkt *pkt)
 
 	k_sem_give(&context->tx_rx_sem);
 
-	if (tx_end & ENC28J60_BIT_ESTAT_TXABRT) {
+	if ((tx_end & ENC28J60_BIT_ESTAT_TXABRT) || txerif) {
+		LOG_ERR("Colision? 0x%02x",tx_end);
+	} else if (tx_end & ENC28J60_BIT_ESTAT_TXABRT) {
 		LOG_ERR("TX failed!");
 		return -EIO;
 	}
@@ -483,19 +503,13 @@ static int eth_enc28j60_tx(struct device *dev, struct net_pkt *pkt)
 	return 0;
 }
 
-static int eth_enc28j60_rx(struct device *dev)
+static int eth_enc28j60_rx(struct device *dev, u8_t counter)
 {
 	const struct eth_enc28j60_config *config = dev->config->config_info;
 	struct eth_enc28j60_runtime *context = dev->driver_data;
 	u16_t lengthfr;
-	u8_t counter;
+	u8_t  crc[4];
 
-	/* Errata 6. The Receive Packet Pending Interrupt Flag (EIR.PKTIF)
-	 * does not reliably/accurately report the status of pending packet.
-	 * Use EPKTCNT register instead.
-	*/
-	eth_enc28j60_set_bank(dev, ENC28J60_REG_EPKTCNT);
-	eth_enc28j60_read_reg(dev, ENC28J60_REG_EPKTCNT, &counter);
 	if (!counter) {
 		return 0;
 	}
@@ -532,7 +546,7 @@ static int eth_enc28j60_rx(struct device *dev)
 		}*/
 
 		/* Read reception status vector */
-		eth_enc28j60_read_mem(dev, info, 4);
+		eth_enc28j60_read_mem(dev, info, RSV_SIZE);
 
 		/* Get the frame length from the rx status vector,
 		 * minus CRC size at the end which is always present
@@ -578,13 +592,14 @@ static int eth_enc28j60_rx(struct device *dev)
 		} while (frm_len > 0);
 
 		/* Let's pop the useless CRC */
-		eth_enc28j60_read_mem(dev, NULL, 4);
+		eth_enc28j60_read_mem(dev, crc, 4);
 
 		/* Pops one padding byte from spi circular buffer
 		 * introduced by the device when the frame length is odd
 		 */
 		if (lengthfr & 0x01) {
-			eth_enc28j60_read_mem(dev, NULL, 1);
+			u8_t extra;
+			eth_enc28j60_read_mem(dev, &extra, 1);
 		}
 
 		/* Feed buffer frame to IP stack */
@@ -616,18 +631,33 @@ static void eth_enc28j60_rx_thread(struct device *dev)
 {
 	struct eth_enc28j60_runtime *context = dev->driver_data;
 	u8_t int_stat;
+	u8_t counter;
 
 	while (true) {
 		k_sem_take(&context->int_sem, K_FOREVER);
 
 		eth_enc28j60_read_reg(dev, ENC28J60_REG_EIR, &int_stat);
-		if (int_stat & ENC28J60_BIT_EIR_PKTIF) {
-			eth_enc28j60_rx(dev);
+
+		/* Errata 6. The Receive Packet Pending Interrupt Flag (EIR.PKTIF)
+		* does not reliably/accurately report the status of pending packet.
+		* Use EPKTCNT register instead.
+		*/
+		eth_enc28j60_set_bank(dev, ENC28J60_REG_EPKTCNT);
+		eth_enc28j60_read_reg(dev, ENC28J60_REG_EPKTCNT, &counter);
+
+		if ((int_stat & ENC28J60_BIT_EIR_PKTIF) || counter) {
+			eth_enc28j60_rx(dev, counter);
 			/* Clear rx interruption flag */
 			eth_enc28j60_clear_eth_reg(dev, ENC28J60_REG_EIR,
 						   ENC28J60_BIT_EIR_PKTIF
 						   | ENC28J60_BIT_EIR_RXERIF);
+			int_stat &= ~(ENC28J60_BIT_EIR_PKTIF | ENC28J60_BIT_EIR_RXERIF);
 		}
+		if (int_stat) {
+			/* Clear all other interrupt statuses */
+			eth_enc28j60_clear_eth_reg(dev, ENC28J60_REG_EIR, int_stat);
+		}
+		// k_sleep(CONFIG_ETH_ENC28J60_TIMEOUT);
 	}
 }
 
@@ -684,6 +714,7 @@ static int eth_enc28j60_init(struct device *dev)
 
 	context->spi_cs.gpio_pin = config->spi_cs_pin;
 	context->spi_cfg.cs = &context->spi_cs;
+	context->spi_cs.delay = 1;
 #endif /* CONFIG_ETH_ENC28J60_0_GPIO_SPI_CS */
 
 	/* Initialize GPIO */
@@ -694,7 +725,7 @@ static int eth_enc28j60_init(struct device *dev)
 	}
 
 	if (gpio_pin_configure(context->gpio, config->gpio_pin,
-			       GPIO_INPUT | config->gpio_flags)) {
+			       GPIO_INPUT | GPIO_INT_ENABLE | GPIO_INT_LOW_0| GPIO_INT_EDGE | config->gpio_flags)) {
 		LOG_ERR("Unable to configure GPIO pin %u", config->gpio_pin);
 		return -EINVAL;
 	}
@@ -710,18 +741,27 @@ static int eth_enc28j60_init(struct device *dev)
 				     config->gpio_pin,
 				     GPIO_INT_EDGE_TO_ACTIVE);
 
+	// errata 19
+	eth_enc28j60_clear_eth_reg(dev, ENC28J60_REG_ECON2,
+				 ENC28J60_BIT_ECON2_PWRSV);
+	k_busy_wait(1000);
+
 	if (eth_enc28j60_soft_reset(dev)) {
 		LOG_ERR("Soft-reset failed");
 		return -EIO;
 	}
 
-	/* Errata B7/1 */
-	k_busy_wait(D10D24S);
-
 	/* Assign octets not previously taken from devicetree */
 	context->mac_address[0] = MICROCHIP_OUI_B0;
 	context->mac_address[1] = MICROCHIP_OUI_B1;
 	context->mac_address[2] = MICROCHIP_OUI_B2;
+
+	/* Errata B7/1 */
+	// wait for clock to stabilize
+	eth_enc28j60_wait_for_ost(dev);
+	
+	// Stretch pulses for LED, LED_A=Link, LED_B=activity
+	eth_enc28j60_write_phy(dev, ENC28J60_PHY_PHLCON, 0x5476); //errata 11, do for h-duplex as well
 
 	eth_enc28j60_init_buffers(dev);
 	eth_enc28j60_init_mac(dev);
@@ -764,7 +804,7 @@ static const struct eth_enc28j60_config eth_enc28j60_0_config = {
 	.gpio_flags = DT_INST_0_MICROCHIP_ENC28J60_INT_GPIOS_FLAGS,
 	.spi_port = DT_INST_0_MICROCHIP_ENC28J60_BUS_NAME,
 	.spi_freq  = DT_INST_0_MICROCHIP_ENC28J60_SPI_MAX_FREQUENCY,
-	.spi_slave = DT_INST_0_MICROCHIP_ENC28J60_BASE_ADDRESS,
+	.spi_slave = 1, //force CS 1 on LPC55S69
 #ifdef CONFIG_ETH_ENC28J60_0_GPIO_SPI_CS
 	.spi_cs_port = DT_INST_0_MICROCHIP_ENC28J60_CS_GPIOS_CONTROLLER,
 	.spi_cs_pin = DT_INST_0_MICROCHIP_ENC28J60_CS_GPIOS_PIN,
@@ -778,5 +818,9 @@ NET_DEVICE_INIT(enc28j60_0, DT_INST_0_MICROCHIP_ENC28J60_LABEL,
 		&eth_enc28j60_0_config, CONFIG_ETH_INIT_PRIORITY, &api_funcs,
 		ETHERNET_L2, NET_L2_GET_CTX_TYPE(ETHERNET_L2),
 		NET_ETH_MTU);
+
+// ETH_NET_DEVICE_INIT(enc28j60_0, DT_INST_0_MICROCHIP_ENC28J60_LABEL,
+// 			eth_enc28j60_init, &eth_enc28j60_0_runtime, &eth_enc28j60_0_config, CONFIG_ETH_INIT_PRIORITY,
+// 		    &api_funcs, NET_ETH_MTU);
 
 #endif /* CONFIG_ETH_ENC28J60_0 */

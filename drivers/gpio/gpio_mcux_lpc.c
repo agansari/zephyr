@@ -209,7 +209,7 @@ static u32_t attach_pin_to_isr(u32_t port, u32_t pin, u32_t isr_no)
 	if (isr_no < PIN_INT4_IRQn) {
 		pint_idx = isr_no - PIN_INT0_IRQn;
 	} else {
-		pint_idx = isr_no - PIN_INT4_IRQn;
+		pint_idx = 4 + isr_no - PIN_INT4_IRQn;
 	}
 
 	INPUTMUX_AttachSignal(INPUTMUX, pint_idx,

@@ -62,8 +62,8 @@ static ALWAYS_INLINE void clock_init(void)
     CLOCK_EnableClock(kCLOCK_Iocon);
 
 #ifdef CONFIG_SPI_8
-	/* Attach 12 MHz clock to FLEXCOMM8 */
-	CLOCK_AttachClk(kFRO12M_to_HSLSPI);
+	/* Attach core's clock to FLEXCOMM8 */
+	CLOCK_AttachClk(kFRO_HF_DIV_to_HSLSPI);
 
 	/* reset FLEXCOMM for SPI */
 	RESET_PeripheralReset(kHSLSPI_RST_SHIFT_RSTn);

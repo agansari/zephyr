@@ -11,4 +11,6 @@
 
 #define DT_FLASH_DEV_NAME    DT_INST_0_NXP_LPC_IAP_LABEL
 
+#define CONFIG_ENTROPY_NAME	 DT_INST_0_NXP_LPC_RNG_LABEL
+
 /* End of SoC Level DTS fixup file */

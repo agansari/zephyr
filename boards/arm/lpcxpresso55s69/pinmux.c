@@ -97,12 +97,12 @@ static int lpcxpresso_55s69_pinmux_init(struct device *dev)
 				  IOCON_PIO_OPENDRAIN_DI);
 
 	/* PORT1 PIN1 is configured as HS_SPI_SSEL1 */
-	pinmux_pin_set(port1,  1, IOCON_PIO_FUNC5 |
-				  IOCON_PIO_MODE_PULLUP |
-				  IOCON_PIO_INV_DI |
-				  IOCON_PIO_DIGITAL_EN |
-				  IOCON_PIO_SLEW_STANDARD |
-				  IOCON_PIO_OPENDRAIN_DI);
+	// pinmux_pin_set(port1,  1, IOCON_PIO_FUNC5 |
+	// 			  IOCON_PIO_MODE_PULLUP |
+	// 			  IOCON_PIO_INV_DI |
+	// 			  IOCON_PIO_DIGITAL_EN |
+	// 			  IOCON_PIO_SLEW_STANDARD |
+	// 			  IOCON_PIO_OPENDRAIN_DI);
 
 	/* PORT1 PIN2 is configured as HS_SPI_SCK */
 	pinmux_pin_set(port1,  2, IOCON_PIO_FUNC6 |
@@ -120,6 +120,16 @@ static int lpcxpresso_55s69_pinmux_init(struct device *dev)
 				  IOCON_PIO_SLEW_STANDARD |
 				  IOCON_PIO_OPENDRAIN_DI);
 #endif /* CONFIG_SPI_8 */
+	const u32_t port1_pin1_config = (
+			IOCON_PIO_FUNC0 |
+			IOCON_PIO_MODE_PULLUP |
+			IOCON_PIO_INV_DI |
+			IOCON_PIO_DIGITAL_EN |
+			IOCON_PIO_INPFILT_OFF |
+			IOCON_PIO_SLEW_STANDARD |
+			IOCON_PIO_OPENDRAIN_DI
+			);
+	pinmux_pin_set(port1, 1, port1_pin1_config);
 
 	return 0;
 }

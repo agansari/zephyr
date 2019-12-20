@@ -67,8 +67,8 @@ static ALWAYS_INLINE void clock_init(void)
 	CLOCK_AttachClk(kFRO12M_to_FLEXCOMM0);
 
 #ifdef CONFIG_SPI_5
-	/* Attach 12 MHz clock to FLEXCOMM5 */
-	CLOCK_AttachClk(kFRO12M_to_FLEXCOMM5);
+	/* Attach core's clock to FLEXCOMM5 */
+	CLOCK_AttachClk(kFRO_HF_to_FLEXCOMM5);
 
 	/* reset FLEXCOMM for SPI */
 	RESET_PeripheralReset(kFC5_RST_SHIFT_RSTn);

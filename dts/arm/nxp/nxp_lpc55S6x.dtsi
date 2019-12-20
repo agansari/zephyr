@@ -149,8 +149,16 @@
 			interrupts = <59 0>;
 			label = "SPI_8";
 			status = "disabled";
+			cs-gpios = <&gpio1 1 0>;
 			#address-cells = <1>;
 			#size-cells = <0>;
+		};
+
+		rng: rng@5003a000 {
+			compatible = "nxp,lpc-rng";
+			reg = <0x5003a000 0x1000>;
+			status = "okay";
+			label = "RNG";
 		};
 	};
 };
