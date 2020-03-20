@@ -680,7 +680,8 @@ static void eth_enc28j60_rx_thread(struct device *dev)
 	u8_t counter;
 
 	while (true) {
-		k_sem_take(&context->int_sem, K_FOREVER);
+		/* Wait for semaphore from interrupt or poll anyway. */
+		k_sem_take(&context->int_sem, CONFIG_ETH_ENC28J60_TIMEOUT);
 
 		eth_enc28j60_read_reg(dev, ENC28J60_REG_EIR, &int_stat);
 
@@ -703,7 +704,6 @@ static void eth_enc28j60_rx_thread(struct device *dev)
 			/* Clear all other interrupt statuses */
 			eth_enc28j60_clear_eth_reg(dev, ENC28J60_REG_EIR, int_stat);
 		}
-		// k_sleep(CONFIG_ETH_ENC28J60_TIMEOUT);
 	}
 }
 
