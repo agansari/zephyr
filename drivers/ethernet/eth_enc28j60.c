@@ -678,10 +678,17 @@ static void eth_enc28j60_rx_thread(struct device *dev)
 	u16_t vlan_tag = NET_VLAN_TAG_UNSPEC;
 	u8_t int_stat;
 	u8_t counter;
+	k_timeout_t timeout;
+
+#ifdef CONFIG_LEGACY_TIMEOUT_API
+	timeout = k_ms_to_ticks_ceil32(CONFIG_ETH_ENC28J60_TIMEOUT);
+#else
+	timeout.ticks = k_ms_to_ticks_ceil32(CONFIG_ETH_ENC28J60_TIMEOUT);
+#endif
 
 	while (true) {
 		/* Wait for semaphore from interrupt or poll anyway. */
-		k_sem_take(&context->int_sem, CONFIG_ETH_ENC28J60_TIMEOUT);
+		k_sem_take(&context->int_sem, timeout);
 
 		eth_enc28j60_read_reg(dev, ENC28J60_REG_EIR, &int_stat);
 
