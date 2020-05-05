@@ -836,6 +836,8 @@ static int eth_enc28j60_init(struct device *dev)
 	eth_enc28j60_set_eth_reg(dev, ENC28J60_REG_ECON1,
 				 ENC28J60_BIT_ECON1_RXEN);
 
+	show_slave();
+
 	/* Start interruption-poll thread */
 	k_thread_create(&context->thread, context->thread_stack,
 			CONFIG_ETH_ENC28J60_RX_THREAD_STACK_SIZE,
@@ -865,7 +867,7 @@ static const struct eth_enc28j60_config eth_enc28j60_0_config = {
 	.gpio_flags = DT_INST_GPIO_FLAGS(0, int_gpios),
 	.spi_port = DT_INST_BUS_LABEL(0),
 	.spi_freq  = DT_INST_PROP(0, spi_max_frequency),
-	.spi_slave = DT_INST_REG_ADDR(0),
+	.spi_slave = 1, //DT_INST_REG_ADDR(0),
 #if DT_INST_SPI_DEV_HAS_CS_GPIOS(0)
 	.spi_cs_port = DT_INST_SPI_DEV_CS_GPIOS_LABEL(0),
 	.spi_cs_pin = DT_INST_SPI_DEV_CS_GPIOS_PIN(0),
@@ -873,6 +875,11 @@ static const struct eth_enc28j60_config eth_enc28j60_0_config = {
 	.full_duplex = IS_ENABLED(CONFIG_ETH_ENC28J60_0_FULL_DUPLEX),
 	.timeout = CONFIG_ETH_ENC28J60_TIMEOUT,
 };
+
+void show_slave()
+{
+		printk("\n>>>.spi_slave=%d\n\n",eth_enc28j60_0_config.spi_slave);
+}
 
 ETH_NET_DEVICE_INIT(enc28j60_0, DT_INST_LABEL(0),
 		    eth_enc28j60_init, device_pm_control_nop,
