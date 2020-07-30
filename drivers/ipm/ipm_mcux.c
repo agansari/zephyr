@@ -16,12 +16,22 @@
 #define MCUX_IPM_DATA_REGS 1
 #define MCUX_IPM_MAX_ID_VAL 0
 
+#if (defined(LPC55S69_cm33_core0_SERIES) || defined(LPC55S69_cm33_core1_SERIES))
+#ifdef LPC55S69_cm33_core0_SERIES
+#define MAILBOX_ID_THIS_CPU kMAILBOX_CM33_Core0
+#define MAILBOX_ID_OTHER_CPU kMAILBOX_CM33_Core1
+#else
+#define MAILBOX_ID_THIS_CPU kMAILBOX_CM33_Core1
+#define MAILBOX_ID_OTHER_CPU kMAILBOX_CM33_Core0
+#endif
+#else
 #if defined(__CM4_CMSIS_VERSION)
 #define MAILBOX_ID_THIS_CPU kMAILBOX_CM4
 #define MAILBOX_ID_OTHER_CPU kMAILBOX_CM0Plus
 #else
 #define MAILBOX_ID_THIS_CPU kMAILBOX_CM0Plus
 #define MAILBOX_ID_OTHER_CPU kMAILBOX_CM4
+#endif
 #endif
 
 struct mcux_mailbox_config {
@@ -41,6 +51,7 @@ static void mcux_mailbox_isr(const struct device *dev)
 	mailbox_cpu_id_t cpu_id;
 
 	cpu_id = MAILBOX_ID_THIS_CPU;
+	printk(">>>>ISR for cpu %d\n",MAILBOX_ID_THIS_CPU);
 
 	volatile uint32_t value = MAILBOX_GetValue(config->base, cpu_id);
 
@@ -86,6 +97,8 @@ static int mcux_mailbox_ipm_send(const struct device *d, int wait,
 	}
 
 	flags = irq_lock();
+
+	printk(">>>>SEND to cpu %d\n",MAILBOX_ID_OTHER_CPU);
 
 	/* Actual message is passing using 32 bits registers */
 	memcpy(data32, data, size);
