@@ -687,6 +687,7 @@ static uint32_t fault_handle(z_arch_esf_t *esf, int fault, bool *recoverable)
 	uint32_t reason = K_ERR_CPU_EXCEPTION;
 
 	*recoverable = false;
+	printk("fault_handle = %d\n", fault);
 
 	switch (fault) {
 	case 3:
@@ -850,7 +851,8 @@ static inline z_arch_esf_t *get_esf(uint32_t msp, uint32_t psp, uint32_t exc_ret
 		/* Non-Secure Firmware shall only handle Non-Secure Exceptions.
 		 * This is a fatal error.
 		 */
-		return NULL;
+		printk("FAIL<<<<<<<<<<<<<\n");
+		// return NULL;
 	}
 
 	if (exc_return & EXC_RETURN_RETURN_STACK_Secure) {
@@ -951,6 +953,7 @@ void z_arm_fault(uint32_t msp, uint32_t psp, uint32_t exc_return,
 	/* Retrieve the Exception Stack Frame (ESF) to be supplied
 	 * as argument to the remainder of the fault handling process.
 	 */
+	printk("exc_return = 0x%x\n",exc_return);
 	 esf = get_esf(msp, psp, exc_return, &nested_exc);
 	__ASSERT(esf != NULL,
 		"ESF could not be retrieved successfully. Shall never occur.");
