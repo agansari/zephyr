@@ -25,6 +25,7 @@
 #include <fsl_common.h>
 #include <fsl_device_registers.h>
 #include <fsl_pint.h>
+// #include <cortex_m/tz.h>
 
 /**
  *
@@ -82,7 +83,57 @@ static ALWAYS_INLINE void clock_init(void)
 	SYSCON->CLOCK_CTRL |= SYSCON_CLOCK_CTRL_FRO1MHZ_CLK_ENA_MASK;
 #endif
 
+    CLOCK_EnableClock(kCLOCK_Mailbox);
+    /* Reset the MAILBOX module */
+    RESET_PeripheralReset(kMAILBOX_RST_SHIFT_RSTn);
+
+    CLOCK_EnableClock(kCLOCK_Sram1);
+    CLOCK_EnableClock(kCLOCK_Sram2);
+    CLOCK_EnableClock(kCLOCK_Sram3);
+    CLOCK_EnableClock(kCLOCK_Sram4);
+
+	RESET_PeripheralReset(kSRAM1_RST_SHIFT_RSTn);
+    RESET_PeripheralReset(kSRAM2_RST_SHIFT_RSTn);
+    RESET_PeripheralReset(kSRAM3_RST_SHIFT_RSTn);
+    RESET_PeripheralReset(kSRAM4_RST_SHIFT_RSTn);
+
+	SYSCON->AHBCLKCTRLSET[0] = SYSCON_AHBCLKCTRL0_SRAM_CTRL1_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL2_MASK |
+							SYSCON_AHBCLKCTRL0_SRAM_CTRL3_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL4_MASK;
+
+	printk("early>>>\n CPSTAT = 0x%x\n CPUCTRL = 0x%x\n",SYSCON->CPSTAT,SYSCON->CPUCTRL);
+
 #endif /* CONFIG_SOC_LPC55S69_CPU0 */
+}
+
+void z_platform_init(void)
+{
+// #if ((__FPU_PRESENT == 1) && (__FPU_USED == 1))
+//     SCB->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Secure mode */
+// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+//     SCB_NS->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Normal mode */
+// #endif                                                    /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
+// #endif                                                    /* ((__FPU_PRESENT == 1) && (__FPU_USED == 1)) */
+
+//     SCB->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Secure mode (enable PowerQuad) */
+// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+//     SCB_NS->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Normal mode (enable PowerQuad) */
+// #endif                                                  /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
+
+    // SCB->NSACR |= ((3UL << 0) | (3UL << 10)); /* enable CP0, CP1, CP10, CP11 Non-secure Access */
+
+// #if defined(__MCUXPRESSO)
+//     extern void (*const g_pfnVectors[])(void);
+//     SCB->VTOR = (uint32_t)&g_pfnVectors;
+// #else
+//     extern void *__Vectors;
+//     SCB->VTOR = (uint32_t)&__Vectors;
+// #endif
+    // SYSCON->TRACECLKDIV = 0;
+/* Optionally enable RAM banks that may be off by default at reset */
+// #if !defined(DONT_ENABLE_DISABLED_RAMBANKS)
+//     SYSCON->AHBCLKCTRLSET[0] = SYSCON_AHBCLKCTRL0_SRAM_CTRL1_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL2_MASK |
+//                                SYSCON_AHBCLKCTRL0_SRAM_CTRL3_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL4_MASK;
+// #endif
 }
 
 /**
@@ -115,6 +166,34 @@ static int nxp_lpc55xxx_init(const struct device *arg)
 	PINT_Init(PINT);
 #endif
 
+#ifdef CONFIG_CPU_HAS_ARM_SAU
+	/* Disable SAU device until security is properly configuration */
+	// TZ_SAU_Disable();
+	// SAU->CTRL &= ~(1);
+	// tz_sau_configure(0,1);
+#endif
+
+// #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+// 	SAU->CTRL |= (1 << SAU_CTRL_ALLNS_Pos);
+// #endif
+
+// #if ((__FPU_PRESENT == 1) && (__FPU_USED == 1))
+//     SCB->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Secure mode */
+// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+//     SCB_NS->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Normal mode */
+// #endif                                                    /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
+// #endif                                                    /* ((__FPU_PRESENT == 1) && (__FPU_USED == 1)) */
+
+//     SCB->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Secure mode (enable PowerQuad) */
+// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+//     SCB_NS->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Normal mode (enable PowerQuad) */
+// #endif                                                  /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
+
+//     SCB->NSACR |= ((3UL << 0) | (3UL << 10)); /* enable CP0, CP1, CP10, CP11 Non-secure Access */
+
+// 	SYSCON->AHBCLKCTRLSET[0] = SYSCON_AHBCLKCTRL0_SRAM_CTRL1_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL2_MASK |
+//                                SYSCON_AHBCLKCTRL0_SRAM_CTRL3_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL4_MASK;
+
 	/*
 	 * install default handler that simply resets the CPU if configured in
 	 * the kernel, NOP otherwise
@@ -128,3 +207,115 @@ static int nxp_lpc55xxx_init(const struct device *arg)
 }
 
 SYS_INIT(nxp_lpc55xxx_init, PRE_KERNEL_1, 0);
+
+#ifdef CONFIG_SLAVE_CORE_MCUX
+
+#define SLAVE_CORE_BOOT_ADDRESS (void *)CONFIG_SLAVE_BOOT_ADDRESS_MCUX
+
+static const char slave_core[] = {
+#include "slave-core.inc"
+};
+
+/**
+ *
+ * @brief Slave Init
+ *
+ * This routine boots the secondary core
+ * @return N/A
+ */
+/* This function is also called at deep sleep resume. */
+int _slave_init(struct device *arg)
+{
+	ARG_UNUSED(arg);
+
+	/* Setup the reset handler pointer (PC) and stack pointer value.
+	 * This is used once the second core runs its startup code.
+	 * The second core first boots from flash (address 0x00000000)
+	 * and then detects its identity (Core no. 1, slave) and checks
+	 * registers CPBOOT and use them to continue the boot process.
+	 * Make sure the startup code for master core is
+	 * appropriate and shareable with the slave core!
+	 */
+    SYSCON->CPUCFG |= SYSCON_CPUCFG_CPU1ENABLE_MASK;
+
+    /* Boot source for Core 1 from RAM */
+    SYSCON->CPBOOT = SYSCON_CPBOOT_CPBOOT(*(uint32_t *)DT_REG_ADDR(DT_CHOSEN(zephyr_code_cpu1_partition)));
+
+	// printk("\n\n*(uint32_t *)DT_REG_ADDR(DT_CHOSEN(zephyr_code_cpu1_partition)) = 0x%x\n\n",*(uint32_t *)DT_REG_ADDR(DT_CHOSEN(zephyr_code_cpu1_partition)));
+
+    int32_t temp = SYSCON->CPUCTRL;
+    temp |= 0xc0c40000;
+    SYSCON->CPUCTRL = temp | SYSCON_CPUCTRL_CPU1RSTEN_MASK | SYSCON_CPUCTRL_CPU1CLKEN_MASK;
+    SYSCON->CPUCTRL = (temp | SYSCON_CPUCTRL_CPU1CLKEN_MASK) & (~SYSCON_CPUCTRL_CPU1RSTEN_MASK);
+
+	printk("after>>>\n CPSTAT = 0x%x\n CPUCTRL = 0x%x\n",SYSCON->CPSTAT,SYSCON->CPUCTRL);
+
+	// configure_nonsecure_msp()
+
+	return 0;
+}
+
+SYS_INIT(_slave_init, PRE_KERNEL_2, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+
+#endif /*CONFIG_SLAVE_CORE_MCUX*/
+
+#if defined(CONFIG_SOC_LPC55S69_CPU1)
+
+#include <zephyr.h>
+#include <device.h>
+#include <devicetree.h>
+#include <drivers/gpio.h>
+
+/* 1000 msec = 1 sec */
+#define SLEEP_TIME_MS   1000
+
+/* The devicetree node identifier for the "led0" alias. */
+#define LED0_NODE DT_ALIAS(led2)
+
+#if DT_NODE_HAS_STATUS(LED0_NODE, okay)
+#define LED0	DT_GPIO_LABEL(LED0_NODE, gpios)
+#define PIN	DT_GPIO_PIN(LED0_NODE, gpios)
+#if DT_PHA_HAS_CELL(LED0_NODE, gpios, flags)
+#define FLAGS	DT_GPIO_FLAGS(LED0_NODE, gpios)
+#endif
+#else
+/* A build error here means your board isn't set up to blink an LED. */
+#error "Unsupported board: led0 devicetree alias is not defined"
+#define LED0	""
+#define PIN	0
+#endif
+
+#ifndef FLAGS
+#define FLAGS	0
+#endif
+
+int _slave_blink(struct device *arg)
+{
+	struct device *dev;
+	bool led_is_on = false;
+	int ret;
+
+	dev = device_get_binding(LED0);
+	if (dev == NULL) {
+		return 0;
+	}
+
+	ret = gpio_pin_configure(dev, PIN, GPIO_OUTPUT_ACTIVE | FLAGS);
+	if (ret < 0) {
+		return 0;
+	}
+
+	gpio_pin_set(dev, PIN, (int)led_is_on);
+	
+	// while (1) {
+	// 	gpio_pin_set(dev, PIN, (int)led_is_on);
+	// 	led_is_on = !led_is_on;
+	// 	k_msleep(SLEEP_TIME_MS);
+	// }
+
+	return 0;
+}
+
+SYS_INIT(_slave_blink, PRE_KERNEL_2, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+
+#endif
