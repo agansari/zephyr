@@ -21,6 +21,8 @@ void main(void)
 {
 	const struct device *ipm;
 
+	printk("sclavu\n");
+
 	ipm = device_get_binding(DT_LABEL(DT_INST(0, nxp_lpc_mailbox)));
 	if (!ipm) {
 		while (1) {
@@ -29,5 +31,6 @@ void main(void)
 	ipm_register_callback(ipm, ping_ipm_callback, NULL);
 	ipm_set_enabled(ipm, 1);
 	while (1) {
+		printk("^");
 	}
 }

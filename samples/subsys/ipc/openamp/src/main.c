@@ -180,24 +180,32 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	if (status != 0) {
 		printk("metal_init: failed - error code %d\n", status);
 		return;
+	} else {
+		printk("metal_init\n");
 	}
 
 	status = metal_register_generic_device(&shm_device);
 	if (status != 0) {
 		printk("Couldn't register shared memory device: %d\n", status);
 		return;
+	} else {
+		printk("metal_register_generic_device\n");
 	}
 
 	status = metal_device_open("generic", SHM_DEVICE_NAME, &device);
 	if (status != 0) {
 		printk("metal_device_open failed: %d\n", status);
 		return;
+	} else {
+		printk("metal_device_open\n");
 	}
 
 	io = metal_device_io_region(device, 0);
 	if (io == NULL) {
 		printk("metal_device_io_region failed to get region\n");
 		return;
+	} else {
+		printk("metal_device_io_region\n");
 	}
 
 	/* setup IPM */
@@ -205,14 +213,19 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	if (ipm_handle == NULL) {
 		printk("device_get_binding failed to find device\n");
 		return;
+	} else {
+		printk("device_get_binding\n");
 	}
 
 	ipm_register_callback(ipm_handle, platform_ipm_callback, NULL);
+	printk("ipm_register_callback\n");
 
 	status = ipm_set_enabled(ipm_handle, 1);
 	if (status != 0) {
 		printk("ipm_set_enabled failed\n");
 		return;
+	} else {
+		printk("ipm_set_enabled\n");
 	}
 
 	/* setup vdev */
@@ -226,6 +239,8 @@ void app_task(void *arg1, void *arg2, void *arg3)
 		printk("virtqueue_allocate failed to alloc vq[1]\n");
 		return;
 	}
+	printk("alloca\n");
+
 
 	vdev.role = RPMSG_MASTER;
 	vdev.vrings_num = VRING_COUNT;
@@ -250,16 +265,21 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	if (status != 0) {
 		printk("rpmsg_init_vdev failed %d\n", status);
 		return;
+	} else {
+		printk("rpmsg_virtio_init_shm_pool\n");
 	}
 
 	/* Since we are using name service, we need to wait for a response
 	 * from NS setup and than we need to process it
 	 */
 	k_sem_take(&data_sem, K_FOREVER);
+	printk("k_sem_take(&data_sem, K_FOREVER);\n");
 	virtqueue_notification(vq[0]);
+	printk("virtqueue_notification\n");
 
 	/* Wait til nameservice ep is setup */
 	k_sem_take(&ept_sem, K_FOREVER);
+	printk("k_sem_take(&ept_sem, K_FOREVER);\n");
 
 	while (message < 100) {
 		status = send_message(message);
