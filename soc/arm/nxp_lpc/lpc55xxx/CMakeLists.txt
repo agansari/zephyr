@@ -11,3 +11,15 @@ zephyr_library_include_directories(
   ${ZEPHYR_BASE}/kernel/include
   ${ZEPHYR_BASE}/arch/${ARCH}/include
   )
+
+if (CONFIG_SLAVE_CORE_MCUX)
+  set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated/)
+  string(CONFIGURE ${CONFIG_SLAVE_IMAGE_MCUX} slave_core_image)
+
+  add_custom_target(slave_core_inc_target DEPENDS ${gen_dir}/slave-core.inc)
+
+  generate_inc_file_for_gen_target(${ZEPHYR_CURRENT_LIBRARY}
+				   ${slave_core_image}
+				   ${gen_dir}/slave-core.inc
+				   slave_core_inc_target)
+endif()
