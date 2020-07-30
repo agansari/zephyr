@@ -27,6 +27,10 @@
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
 		zephyr,code-partition = &slot0_partition;
+		zephyr,code-non-secure-partition = &slot0_ns_partition;
+		zephyr,code-cpu1-partition = &slot1_partition;
+		zephyr,sram-secure-partition = &sram0;
+		zephyr,sram-non-secure-partition = &sram1;
 		zephyr,console = &flexcomm0;
 		zephyr,shell-uart = &flexcomm0;
 		zephyr,entropy = &rng;
@@ -97,5 +101,8 @@
 	 * memory.
 	 */
 	dma-channels = <20>;
+};
+
+&mailbox0 {
 	status = "okay";
 };
