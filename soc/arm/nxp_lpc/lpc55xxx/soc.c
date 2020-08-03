@@ -134,6 +134,28 @@ void z_platform_init(void)
 //     SYSCON->AHBCLKCTRLSET[0] = SYSCON_AHBCLKCTRL0_SRAM_CTRL1_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL2_MASK |
 //                                SYSCON_AHBCLKCTRL0_SRAM_CTRL3_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL4_MASK;
 // #endif
+
+// #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+// 	SAU->CTRL |= (1 << SAU_CTRL_ALLNS_Pos);
+// #endif
+
+// #if ((__FPU_PRESENT == 1) && (__FPU_USED == 1))
+//     SCB->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Secure mode */
+// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+//     SCB_NS->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Normal mode */
+// #endif                                                    /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
+// #endif                                                    /* ((__FPU_PRESENT == 1) && (__FPU_USED == 1)) */
+
+//     SCB->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Secure mode (enable PowerQuad) */
+// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+//     SCB_NS->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Normal mode (enable PowerQuad) */
+// #endif                                                  /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
+
+//     SCB->NSACR |= ((3UL << 0) | (3UL << 10)); /* enable CP0, CP1, CP10, CP11 Non-secure Access */
+
+	SYSCON->AHBCLKCTRLSET[0] = SYSCON_AHBCLKCTRL0_SRAM_CTRL1_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL2_MASK |
+                               SYSCON_AHBCLKCTRL0_SRAM_CTRL3_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL4_MASK;
+
 }
 
 /**
@@ -173,27 +195,6 @@ static int nxp_lpc55xxx_init(const struct device *arg)
 	// tz_sau_configure(0,1);
 #endif
 
-// #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-// 	SAU->CTRL |= (1 << SAU_CTRL_ALLNS_Pos);
-// #endif
-
-// #if ((__FPU_PRESENT == 1) && (__FPU_USED == 1))
-//     SCB->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Secure mode */
-// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-//     SCB_NS->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Normal mode */
-// #endif                                                    /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
-// #endif                                                    /* ((__FPU_PRESENT == 1) && (__FPU_USED == 1)) */
-
-//     SCB->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Secure mode (enable PowerQuad) */
-// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-//     SCB_NS->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Normal mode (enable PowerQuad) */
-// #endif                                                  /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
-
-//     SCB->NSACR |= ((3UL << 0) | (3UL << 10)); /* enable CP0, CP1, CP10, CP11 Non-secure Access */
-
-// 	SYSCON->AHBCLKCTRLSET[0] = SYSCON_AHBCLKCTRL0_SRAM_CTRL1_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL2_MASK |
-//                                SYSCON_AHBCLKCTRL0_SRAM_CTRL3_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL4_MASK;
-
 	/*
 	 * install default handler that simply resets the CPU if configured in
 	 * the kernel, NOP otherwise
@@ -228,6 +229,8 @@ int _slave_init(struct device *arg)
 {
 	ARG_UNUSED(arg);
 
+	memcpy((void *)CONFIG_SLAVE_BOOT_ADDRESS_MCUX, (void *)slave_core, sizeof(slave_core));
+
 	/* Setup the reset handler pointer (PC) and stack pointer value.
 	 * This is used once the second core runs its startup code.
 	 * The second core first boots from flash (address 0x00000000)
@@ -238,13 +241,17 @@ int _slave_init(struct device *arg)
 	 */
     SYSCON->CPUCFG |= SYSCON_CPUCFG_CPU1ENABLE_MASK;
 
-    /* Boot source for Core 1 from RAM */
-    SYSCON->CPBOOT = SYSCON_CPBOOT_CPBOOT(*(uint32_t *)DT_REG_ADDR(DT_CHOSEN(zephyr_code_cpu1_partition)));
+	/* Boot source for Core 1 from RAM */
+	SYSCON->CPBOOT = SYSCON_CPBOOT_CPBOOT(
+			*(uint32_t *)((uint8_t *)CONFIG_SLAVE_BOOT_ADDRESS_MCUX));
+
+    /* Boot source for Core 1 from flash */
+    // SYSCON->CPBOOT = SYSCON_CPBOOT_CPBOOT(*(uint32_t *)DT_REG_ADDR(DT_CHOSEN(zephyr_code_cpu1_partition)));
 
 	// printk("\n\n*(uint32_t *)DT_REG_ADDR(DT_CHOSEN(zephyr_code_cpu1_partition)) = 0x%x\n\n",*(uint32_t *)DT_REG_ADDR(DT_CHOSEN(zephyr_code_cpu1_partition)));
 
     int32_t temp = SYSCON->CPUCTRL;
-    temp |= 0xc0c40000;
+    temp |= 0xc0c48000;
     SYSCON->CPUCTRL = temp | SYSCON_CPUCTRL_CPU1RSTEN_MASK | SYSCON_CPUCTRL_CPU1CLKEN_MASK;
     SYSCON->CPUCTRL = (temp | SYSCON_CPUCTRL_CPU1CLKEN_MASK) & (~SYSCON_CPUCTRL_CPU1RSTEN_MASK);
 
