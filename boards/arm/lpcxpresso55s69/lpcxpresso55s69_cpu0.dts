@@ -31,6 +31,7 @@
 		zephyr,code-cpu1-partition = &slot1_partition;
 		zephyr,sram-secure-partition = &sram0;
 		zephyr,sram-non-secure-partition = &sram1;
+		zephyr,sram-cpu1-partition = &sram3;
 		zephyr,console = &flexcomm0;
 		zephyr,shell-uart = &flexcomm0;
 		zephyr,entropy = &rng;
