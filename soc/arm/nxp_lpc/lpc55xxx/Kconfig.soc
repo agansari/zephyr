@@ -31,10 +31,12 @@ config SOC_LPC55S69_CPU0
 	select HAS_MCUX_LPADC
 	select HAS_MCUX_LPC_DMA
 	select PLATFORM_SPECIFIC_INIT
+	#select SW_VECTOR_RELAY
 
 config SOC_LPC55S69_CPU1
 	bool "SOC_LPC55S69 M33 [CPU 1]"
 	select CPU_CORTEX_M33
+	#select SW_VECTOR_RELAY
 
 endchoice
 
@@ -81,5 +83,11 @@ config SLAVE_BOOT_ADDRESS_MCUX
 	  This is the address the slave core will boot from.  Additionally this
 	  address is where we will copy the SLAVE_IMAGE to.  We default this to
 	  the base of SRAM3.
+
+config NS_IMAGE_BOOT
+	bool "NS Image"
+	default n
+	help
+		No help for you.
 
 endif # SOC_SERIES_LPC55XXX

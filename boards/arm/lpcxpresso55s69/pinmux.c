@@ -157,14 +157,5 @@ static int lpcxpresso_55s69_pinmux_init(const struct device *dev)
 	return 0;
 }
 
-static int lpcxpresso_55s69_pinmux_print(struct device *dev)
-{
-	printk("__ARM_FEATURE_CMSE = %d\n",__ARM_FEATURE_CMSE);
-	return 0;
-}
-
 SYS_INIT(lpcxpresso_55s69_pinmux_init,  PRE_KERNEL_1,
-	 CONFIG_PINMUX_INIT_PRIORITY);
-
-SYS_INIT(lpcxpresso_55s69_pinmux_print,  PRE_KERNEL_2,
 	 CONFIG_PINMUX_INIT_PRIORITY);
