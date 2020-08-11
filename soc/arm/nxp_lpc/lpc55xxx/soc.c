@@ -105,199 +105,185 @@ static ALWAYS_INLINE void clock_init(void)
 #endif /* CONFIG_SOC_LPC55S69_CPU0 */
 }
 
-// void BOARD_InitTrustZone()
-// {
-//     //####################################################################
-//     //### SAU configuration ##############################################
-//     //####################################################################
 
-//     /* Set SAU Control register: Disable SAU and All Secure */
-//     SAU->CTRL = 0;
+#ifdef CONFIG_TRUSTED_EXECUTION_SECURE
+/* SAU region boundaries */
+#define REGION_0_BASE 0
+#define REGION_0_END 0x0FFFFFFFU
+#define REGION_1_BASE 0x20000000U
+#define REGION_1_END 0xFFFFFFFFU
+#define REGION_2_BASE 0x1000FE00U
+#define REGION_2_END 0x1000FFFFU
 
-//     /* Set SAU region number */
-//     SAU->RNR = 0;
-//     /* Region base address */
-//     SAU->RBAR = REGION_0_BASE & SAU_RBAR_BADDR_Msk;
-//     /* Region end address */
-//     SAU->RLAR = ((REGION_0_END & SAU_RLAR_LADDR_Msk) | ((0U << SAU_RLAR_NSC_Pos) & SAU_RLAR_NSC_Msk)) |
-//                 ((1U << SAU_RLAR_ENABLE_Pos) & SAU_RLAR_ENABLE_Msk);
+void BOARD_InitTrustZone()
+{
+    //####################################################################
+    //### SAU configuration ##############################################
+    //####################################################################
 
-//     /* Set SAU region number */
-//     SAU->RNR = 0x00000001U;
-//     /* Region base address */
-//     SAU->RBAR = REGION_1_BASE & SAU_RBAR_BADDR_Msk;
-//     /* Region end address */
-//     SAU->RLAR = ((REGION_1_END & SAU_RLAR_LADDR_Msk) | ((0U << SAU_RLAR_NSC_Pos) & SAU_RLAR_NSC_Msk)) |
-//                 ((1U << SAU_RLAR_ENABLE_Pos) & SAU_RLAR_ENABLE_Msk);
+    /* Set SAU Control register: Disable SAU and All Secure */
+    SAU->CTRL = 0;
 
-//     /* Set SAU region number */
-//     SAU->RNR = 0x00000002U;
-//     /* Region base address */
-//     SAU->RBAR = REGION_2_BASE & SAU_RBAR_BADDR_Msk;
-//     /* Region end address */
-//     SAU->RLAR = ((REGION_2_END & SAU_RLAR_LADDR_Msk) | ((1U << SAU_RLAR_NSC_Pos) & SAU_RLAR_NSC_Msk)) |
-//                 ((1U << SAU_RLAR_ENABLE_Pos) & SAU_RLAR_ENABLE_Msk);
+    /* Set SAU region number */
+    SAU->RNR = 0;
+    /* Region base address */
+    SAU->RBAR = REGION_0_BASE & SAU_RBAR_BADDR_Msk;
+    /* Region end address */
+    SAU->RLAR = ((REGION_0_END & SAU_RLAR_LADDR_Msk) | ((0U << SAU_RLAR_NSC_Pos) & SAU_RLAR_NSC_Msk)) |
+                ((1U << SAU_RLAR_ENABLE_Pos) & SAU_RLAR_ENABLE_Msk);
 
-//     /* Force memory writes before continuing */
-//     __DSB();
-//     /* Flush and refill pipeline with updated permissions */
-//     __ISB();
-//     /* Set SAU Control register: Enable SAU and All Secure (applied only if disabled) */
-//     SAU->CTRL = 0x00000001U;
+    /* Set SAU region number */
+    SAU->RNR = 0x00000001U;
+    /* Region base address */
+    SAU->RBAR = REGION_1_BASE & SAU_RBAR_BADDR_Msk;
+    /* Region end address */
+    SAU->RLAR = ((REGION_1_END & SAU_RLAR_LADDR_Msk) | ((0U << SAU_RLAR_NSC_Pos) & SAU_RLAR_NSC_Msk)) |
+                ((1U << SAU_RLAR_ENABLE_Pos) & SAU_RLAR_ENABLE_Msk);
 
-//     //####################################################################
-//     //### AHB Configurations #############################################
-//     //####################################################################
+    /* Set SAU region number */
+    SAU->RNR = 0x00000002U;
+    /* Region base address */
+    SAU->RBAR = REGION_2_BASE & SAU_RBAR_BADDR_Msk;
+    /* Region end address */
+    SAU->RLAR = ((REGION_2_END & SAU_RLAR_LADDR_Msk) | ((1U << SAU_RLAR_NSC_Pos) & SAU_RLAR_NSC_Msk)) |
+                ((1U << SAU_RLAR_ENABLE_Pos) & SAU_RLAR_ENABLE_Msk);
 
-//     //--------------------------------------------------------------------
-//     //--- AHB Security Level Configurations ------------------------------
-//     //--------------------------------------------------------------------
-//     /* Configuration of AHB Secure Controller
-//      * Possible values for every memory sector or peripheral rule:
-//      *  0    Non-secure, user access allowed.
-//      *  1    Non-secure, privileged access allowed.
-//      *  2    Secure, user access allowed.
-//      *  3    Secure, privileged access allowed. */
+    /* Force memory writes before continuing */
+    __DSB();
+    /* Flush and refill pipeline with updated permissions */
+    __ISB();
+    /* Set SAU Control register: Enable SAU and All Secure (applied only if disabled) */
+    SAU->CTRL = 0x00000001U;
 
-//     //--- Security level configuration of memories -----------------------
-//     AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[0] = 0x00000033U;
-//     AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[1] = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[2] = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[0]   = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[1]   = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[2]   = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[3]   = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_RAMX[0].MEM_RULE[0]                     = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_RAM0[0].MEM_RULE[0]                     = 0x33333333U;
-//     AHB_SECURE_CTRL->SEC_CTRL_RAM0[0].MEM_RULE[1]                     = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_RAM1[0].MEM_RULE[0]                     = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_RAM1[0].MEM_RULE[1]                     = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_RAM2[0].MEM_RULE[0]                     = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_RAM2[0].MEM_RULE[1]                     = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_RAM3[0].MEM_RULE[0]                     = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_RAM3[0].MEM_RULE[1]                     = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_RAM4[0].MEM_RULE[0]                     = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_USB_HS[0].MEM_RULE[0]                   = 0;
+    //####################################################################
+    //### AHB Configurations #############################################
+    //####################################################################
 
-//     //--- Security level configuration of peripherals --------------------
-//     AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL0 = 0x00000033U;
-//     AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL1 = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL2 = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL0 = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL1 = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL2 = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL3 = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT8_SLAVE0_RULE                        = 0x03000000U;
-//     AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT8_SLAVE1_RULE                        = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT9_SLAVE0_RULE                        = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT9_SLAVE1_RULE                        = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT10[0].SLAVE0_RULE                    = 0;
-//     AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT10[0].SLAVE1_RULE                    = 0;
+    //--------------------------------------------------------------------
+    //--- AHB Security Level Configurations ------------------------------
+    //--------------------------------------------------------------------
+    /* Configuration of AHB Secure Controller
+     * Possible values for every memory sector or peripheral rule:
+     *  0    Non-secure, user access allowed.
+     *  1    Non-secure, privileged access allowed.
+     *  2    Secure, user access allowed.
+     *  3    Secure, privileged access allowed. */
 
-//     //--- Security level configuration of masters ------------------------
-//     AHB_SECURE_CTRL->MASTER_SEC_LEVEL        = 0;
-//     AHB_SECURE_CTRL->MASTER_SEC_ANTI_POL_REG = 0x3FFFFFFFU;
+    //--- Security level configuration of memories -----------------------
+    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[0] = 0x00000033U;
+    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[1] = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[2] = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[0]   = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[1]   = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[2]   = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[3]   = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_RAMX[0].MEM_RULE[0]                     = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_RAM0[0].MEM_RULE[0]                     = 0x33333333U;
+    AHB_SECURE_CTRL->SEC_CTRL_RAM0[0].MEM_RULE[1]                     = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_RAM1[0].MEM_RULE[0]                     = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_RAM1[0].MEM_RULE[1]                     = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_RAM2[0].MEM_RULE[0]                     = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_RAM2[0].MEM_RULE[1]                     = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_RAM3[0].MEM_RULE[0]                     = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_RAM3[0].MEM_RULE[1]                     = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_RAM4[0].MEM_RULE[0]                     = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_USB_HS[0].MEM_RULE[0]                   = 0;
 
-//     //--------------------------------------------------------------------
-//     //--- Pins: Reading GPIO state ---------------------------------------
-//     //--------------------------------------------------------------------
-//     // Possible values for every pin:
-//     //  0b0    Deny
-//     //  0b1    Allow
-//     //--------------------------------------------------------------------
-//     AHB_SECURE_CTRL->SEC_GPIO_MASK0 = 0xFFFFFFFFU;
-//     AHB_SECURE_CTRL->SEC_GPIO_MASK1 = 0xFFFFFFFFU;
+    //--- Security level configuration of peripherals --------------------
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL0 = 0x00000033U;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL1 = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL2 = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL0 = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL1 = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL2 = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL3 = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT8_SLAVE0_RULE                        = 0x03000000U;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT8_SLAVE1_RULE                        = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT9_SLAVE0_RULE                        = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT9_SLAVE1_RULE                        = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT10[0].SLAVE0_RULE                    = 0;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT10[0].SLAVE1_RULE                    = 0;
 
-//     //--------------------------------------------------------------------
-//     //--- Interrupts: Interrupt handling by Core1 ------------------------
-//     //--------------------------------------------------------------------
-//     // Possible values for every interrupt:
-//     //  0b0    Deny
-//     //  0b1    Allow
-//     //--------------------------------------------------------------------
-//     AHB_SECURE_CTRL->SEC_CPU_INT_MASK0 = 0xFFFFFFFFU;
-//     AHB_SECURE_CTRL->SEC_CPU_INT_MASK1 = 0xFFFFFFFFU;
+    //--- Security level configuration of masters ------------------------
+    AHB_SECURE_CTRL->MASTER_SEC_LEVEL        = 0;
+    AHB_SECURE_CTRL->MASTER_SEC_ANTI_POL_REG = 0x3FFFFFFFU;
 
-//     //--------------------------------------------------------------------
-//     //--- Interrupts: Interrupt security configuration -------------------
-//     //--------------------------------------------------------------------
-//     // Possible values for every interrupt:
-//     //  0b0    Secure
-//     //  0b1    Non-secure
-//     //--------------------------------------------------------------------
-//     NVIC->ITNS[0] = 0;
-//     NVIC->ITNS[1] = 0;
+    //--------------------------------------------------------------------
+    //--- Pins: Reading GPIO state ---------------------------------------
+    //--------------------------------------------------------------------
+    // Possible values for every pin:
+    //  0b0    Deny
+    //  0b1    Allow
+    //--------------------------------------------------------------------
+    AHB_SECURE_CTRL->SEC_GPIO_MASK0 = 0xFFFFFFFFU;
+    AHB_SECURE_CTRL->SEC_GPIO_MASK1 = 0xFFFFFFFFU;
 
-//     //--------------------------------------------------------------------
-//     //--- Global Options -------------------------------------------------
-//     //--------------------------------------------------------------------
-//     SCB->AIRCR = (SCB->AIRCR & 0x000009FF7U) | 0x005FA0000U;
-//     SCB->SCR &= 0x0FFFFFFF7U;
-//     SCB->SHCSR &= 0x0FFF7FFFFU;
-//     SCB->NSACR                               = 0x00000C03U;
-//     SCnSCB->CPPWR                            = 0;
-//     AHB_SECURE_CTRL->SEC_MASK_LOCK           = 0x00000AAAU;
-//     AHB_SECURE_CTRL->MASTER_SEC_LEVEL        = (AHB_SECURE_CTRL->MASTER_SEC_LEVEL & 0x03FFFFFFFU) | 0x080000000U;
-//     AHB_SECURE_CTRL->MASTER_SEC_ANTI_POL_REG = (AHB_SECURE_CTRL->MASTER_SEC_ANTI_POL_REG & 0x03FFFFFFFU) | 0x080000000U;
-//     AHB_SECURE_CTRL->CPU0_LOCK_REG           = 0x800002AAU;
-//     AHB_SECURE_CTRL->CPU1_LOCK_REG           = 0x8000000AU;
-//     AHB_SECURE_CTRL->MISC_CTRL_REG           = (AHB_SECURE_CTRL->MISC_CTRL_REG & 0x0FFFF0003U) | 0x00000AAA4U;
-//     AHB_SECURE_CTRL->MISC_CTRL_DP_REG        = 0x0000AAA5U;
-// }
+    //--------------------------------------------------------------------
+    //--- Interrupts: Interrupt handling by Core1 ------------------------
+    //--------------------------------------------------------------------
+    // Possible values for every interrupt:
+    //  0b0    Deny
+    //  0b1    Allow
+    //--------------------------------------------------------------------
+    AHB_SECURE_CTRL->SEC_CPU_INT_MASK0 = 0xFFFFFFFFU;
+    AHB_SECURE_CTRL->SEC_CPU_INT_MASK1 = 0xFFFFFFFFU;
+
+    //--------------------------------------------------------------------
+    //--- Interrupts: Interrupt security configuration -------------------
+    //--------------------------------------------------------------------
+    // Possible values for every interrupt:
+    //  0b0    Secure
+    //  0b1    Non-secure
+    //--------------------------------------------------------------------
+    NVIC->ITNS[0] = 0;
+    NVIC->ITNS[1] = 0;
+
+    //--------------------------------------------------------------------
+    //--- Global Options -------------------------------------------------
+    //--------------------------------------------------------------------
+    SCB->AIRCR = (SCB->AIRCR & 0x000009FF7U) | 0x005FA0000U;
+    SCB->SCR &= 0x0FFFFFFF7U;
+    SCB->SHCSR &= 0x0FFF7FFFFU;
+    SCB->NSACR                               = 0x00000C03U;
+    SCnSCB->CPPWR                            = 0;
+    AHB_SECURE_CTRL->SEC_MASK_LOCK           = 0x00000AAAU;
+    AHB_SECURE_CTRL->MASTER_SEC_LEVEL        = (AHB_SECURE_CTRL->MASTER_SEC_LEVEL & 0x03FFFFFFFU) | 0x080000000U;
+    AHB_SECURE_CTRL->MASTER_SEC_ANTI_POL_REG = (AHB_SECURE_CTRL->MASTER_SEC_ANTI_POL_REG & 0x03FFFFFFFU) | 0x080000000U;
+    AHB_SECURE_CTRL->CPU0_LOCK_REG           = 0x800002AAU;
+    AHB_SECURE_CTRL->CPU1_LOCK_REG           = 0x8000000AU;
+    AHB_SECURE_CTRL->MISC_CTRL_REG           = (AHB_SECURE_CTRL->MISC_CTRL_REG & 0x0FFFF0003U) | 0x00000AAA4U;
+    AHB_SECURE_CTRL->MISC_CTRL_DP_REG        = 0x0000AAA5U;
+}
+#endif
 
 void z_platform_init(void)
 {
-// #if ((__FPU_PRESENT == 1) && (__FPU_USED == 1))
-//     SCB->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Secure mode */
-// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-//     SCB_NS->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Normal mode */
-// #endif                                                    /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
-// #endif                                                    /* ((__FPU_PRESENT == 1) && (__FPU_USED == 1)) */
+#if ((__FPU_PRESENT == 1) && (__FPU_USED == 1))
+    SCB->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Secure mode */
+#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+    SCB_NS->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Normal mode */
+#endif                                                    /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
+#endif                                                    /* ((__FPU_PRESENT == 1) && (__FPU_USED == 1)) */
 
-//     SCB->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Secure mode (enable PowerQuad) */
-// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-//     SCB_NS->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Normal mode (enable PowerQuad) */
-// #endif                                                  /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
+    SCB->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Secure mode (enable PowerQuad) */
+#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+    SCB_NS->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Normal mode (enable PowerQuad) */
+#endif                                                  /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
 
-    // SCB->NSACR |= ((3UL << 0) | (3UL << 10)); /* enable CP0, CP1, CP10, CP11 Non-secure Access */
+    SCB->NSACR |= ((3UL << 0) | (3UL << 10)); /* enable CP0, CP1, CP10, CP11 Non-secure Access */
 
-// #if defined(__MCUXPRESSO)
-//     extern void (*const g_pfnVectors[])(void);
-//     SCB->VTOR = (uint32_t)&g_pfnVectors;
-// #else
-//     extern void *__Vectors;
-//     SCB->VTOR = (uint32_t)&__Vectors;
-// #endif
-    // SYSCON->TRACECLKDIV = 0;
-/* Optionally enable RAM banks that may be off by default at reset */
-// #if !defined(DONT_ENABLE_DISABLED_RAMBANKS)
-//     SYSCON->AHBCLKCTRLSET[0] = SYSCON_AHBCLKCTRL0_SRAM_CTRL1_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL2_MASK |
-//                                SYSCON_AHBCLKCTRL0_SRAM_CTRL3_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL4_MASK;
-// #endif
+    SYSCON->TRACECLKDIV = 0;
 
 // #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
 // 	SAU->CTRL |= (1 << SAU_CTRL_ALLNS_Pos);
 // #endif
 
-// #if ((__FPU_PRESENT == 1) && (__FPU_USED == 1))
-//     SCB->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Secure mode */
-// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-//     SCB_NS->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access in Normal mode */
-// #endif                                                    /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
-// #endif                                                    /* ((__FPU_PRESENT == 1) && (__FPU_USED == 1)) */
+	SYSCON->AHBCLKCTRLSET[0] = SYSCON_AHBCLKCTRL0_SRAM_CTRL1_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL2_MASK |
+                               SYSCON_AHBCLKCTRL0_SRAM_CTRL3_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL4_MASK;
 
-//     SCB->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Secure mode (enable PowerQuad) */
-// #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-//     SCB_NS->CPACR |= ((3UL << 0 * 2) | (3UL << 1 * 2)); /* set CP0, CP1 Full Access in Normal mode (enable PowerQuad) */
-// #endif                                                  /* (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
-
-//     SCB->NSACR |= ((3UL << 0) | (3UL << 10)); /* enable CP0, CP1, CP10, CP11 Non-secure Access */
-
-	// SYSCON->AHBCLKCTRLSET[0] = SYSCON_AHBCLKCTRL0_SRAM_CTRL1_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL2_MASK |
-    //                            SYSCON_AHBCLKCTRL0_SRAM_CTRL3_MASK | SYSCON_AHBCLKCTRL0_SRAM_CTRL4_MASK;
-
-	// BOARD_InitTrustZone();
-
+#ifdef CONFIG_TRUSTED_EXECUTION_SECURE
+	BOARD_InitTrustZone();
+#endif
 }
 
 /**
@@ -409,7 +395,7 @@ SYS_INIT(_slave_init, PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 int _ns_init(struct device *arg)
 {
 	ARG_UNUSED(arg);
-	// tz_ns_func_ptr_t ResetHandler_ns;
+	tz_ns_func_ptr_t ResetHandler_ns;
 
 	printk("Hello my baby!...");
 
@@ -417,11 +403,17 @@ int _ns_init(struct device *arg)
 
 	SCB_NS->VTOR = (uint32_t)NS_STACK_ADDRESS;
 
-	// ResetHandler_ns = (tz_ns_func_ptr_t)(*((uint32_t *)((NS_STACK_ADDRESS) + 4U)));
+	ResetHandler_ns = (tz_ns_func_ptr_t)(*((uint32_t *)((NS_STACK_ADDRESS) + 4U))&0xFFFFFFFE);
 
 	printk("Over to you!\n");
 
-	// ResetHandler_ns();
+	ResetHandler_ns();
+
+	// int32_t i;
+	// uint32_t* second_image = (uint32_t*)NS_STACK_ADDRESS;
+	// for (i=0;i<100;i++) {
+	// 	printk("0x%08x\n",second_image[i]);
+	// }
 
 	return 0;
 }
@@ -440,12 +432,12 @@ int _ns_init(struct device *arg)
 #endif //CONFIG_TRUSTED_EXECUTION_NONSECURE
 
 
-SYS_INIT(_ns_init, POST_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+SYS_INIT(_ns_init, POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 
 #endif /*CONFIG_NS_IMAGE_BOOT*/
 
 
-#if defined(CONFIG_SOC_LPC55S69_CPU1)
+#if defined(CONFIG_TRUSTED_EXECUTION_NONSECURE)
 
 #include <zephyr.h>
 #include <device.h>
@@ -456,7 +448,7 @@ SYS_INIT(_ns_init, POST_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 #define SLEEP_TIME_MS   1000
 
 /* The devicetree node identifier for the "led0" alias. */
-#define LED0_NODE DT_ALIAS(led2)
+#define LED0_NODE DT_ALIAS(led1)
 
 #if DT_NODE_HAS_STATUS(LED0_NODE, okay)
 #define LED0	DT_GPIO_LABEL(LED0_NODE, gpios)
