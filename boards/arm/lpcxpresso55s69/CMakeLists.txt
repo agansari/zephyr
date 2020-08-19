@@ -26,7 +26,7 @@ if (CONFIG_BUILD_WITH_TFM)
 
 	# Configure which format (full or hash) to include the public key in
 	# the image manifest
-  set(TFM_PUBLIC_KEY_FORMAT "full")
+  	set(TFM_PUBLIC_KEY_FORMAT "full")
   
 	# Sign binary images as a post-build step
 	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
@@ -59,7 +59,7 @@ if (CONFIG_BUILD_WITH_TFM)
 			 ${CMAKE_BINARY_DIR}/zephyr/${KERNEL_BIN_NAME}
 			 ${CMAKE_BINARY_DIR}/zephyr_ns_signed.bin
 
-    # Copy mcuboot.bin
+    	# Copy mcuboot.bin
 		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/tfm/bl2/ext/mcuboot/mcuboot.bin ${CMAKE_BINARY_DIR}
-  )
+	)
 endif()
