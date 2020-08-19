@@ -77,6 +77,18 @@
 		compatible = "mmio-sram";
 		reg = <0x20040000 DT_SIZE_K(16)>;
 	};
+
+	/* Artificial RAM split for TFM, overlaps with above */
+	sram_s: memory@20000000 {
+		compatible = "mmio-sram";
+		reg = <0x0 DT_SIZE_K(136)>;
+	};
+	sram_ns: memory@0x20022000 {
+		compatible = "mmio-sram";
+		reg = <0x20022000 DT_SIZE_K(136)>;
+	};
+
+
 };
 
 &peripheral {
