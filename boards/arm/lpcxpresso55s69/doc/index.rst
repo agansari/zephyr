@@ -70,6 +70,8 @@ features:
 +-----------+------------+-------------------------------------+
 | WWDT      | on-chip    | windowed watchdog timer             |
 +-----------+------------+-------------------------------------+
+| TrustZone | on-chip    | Trusted Firmware-M                  |
++-----------+------------+-------------------------------------+
 
 The default configuration file
 ``boards/arm/lpcxpresso55s69/lpcxpresso55s69_cpu0_defconfig``
