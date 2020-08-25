@@ -27,7 +27,13 @@ if (CONFIG_BUILD_WITH_TFM)
 	# Configure which format (full or hash) to include the public key in
 	# the image manifest
   	set(TFM_PUBLIC_KEY_FORMAT "full")
-  
+
+	# Set srec_cat binary name
+	find_program(SREC_CAT srec_cat)
+	if(${SREC_CAT} STREQUAL SREC_CAT-NOTFOUND)
+		message(FATAL_ERROR "'srec_cat' not found. Please install it, or add it to $PATH.")
+	endif()
+
 	# Sign binary images as a post-build step
 	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
 
@@ -61,5 +67,25 @@ if (CONFIG_BUILD_WITH_TFM)
 
     	# Copy mcuboot.bin
 		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/tfm/bl2/ext/mcuboot/mcuboot.bin ${CMAKE_BINARY_DIR}
+
+		# #Create concatenated binary image from the two independently signed binary file
+		# COMMAND ${PYTHON_EXECUTABLE} ${TFM_MCUBOOT_DIR}/scripts/assemble.py
+		# ARGS --layout ${PREPROCESSED_FILE}_s.c
+		# 		-s ${CMAKE_BINARY_DIR}/tfm_s_signed.bin
+		# 		-n ${CMAKE_BINARY_DIR}/zephyr_ns_signed.bin
+		# 		-o ${CMAKE_BINARY_DIR}/tfm_sign.bin
+
+		# #Merge mcuboot.bin and tfm_sign.bin
+		# COMMAND ${SREC_CAT}
+		# ARGS ${CMAKE_BINARY_DIR}/mcuboot.bin -Binary
+		# 	${CMAKE_BINARY_DIR}/tfm_sign.bin -Binary
+		# 	-offset 0x10000
+		# 	-o ${CMAKE_BINARY_DIR}/tfm_image.bin -Binary
+
+		# #Convert tfm_image.bin to .hex with an appropriate offset
+		# COMMAND ${SREC_CAT}
+		# ARGS ${CMAKE_BINARY_DIR}/tfm_image.bin -binary
+		# 	-offset 0x0
+		# 	-o ${CMAKE_BINARY_DIR}/tfm_image.hex -intel --line-length=44
 	)
 endif()

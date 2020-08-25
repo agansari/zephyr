@@ -18,7 +18,7 @@ CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=96000000
 
 # tfm_ipc sample doesn't work when MPU is enabled.
 # To use the MPU, TFM_BOOT_MPU_PROTECTION must be disabled.
-#CONFIG_ARM_MPU=y
+CONFIG_ARM_MPU=y
 
 # Enable TrustZone-M
 CONFIG_ARM_TRUSTZONE_M=y
