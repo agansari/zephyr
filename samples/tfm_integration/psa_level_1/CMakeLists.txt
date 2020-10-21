@@ -16,6 +16,7 @@ endif()
 # Add "tfm" as an external project via the TF-M module's cmake file
 trusted_firmware_build(BINARY_DIR ${CMAKE_BINARY_DIR}/tfm
                        BOARD ${TFM_TARGET_PLATFORM}
+                       CMAKE_BUILD_TYPE MinSizeRel
                        IPC
                        REGRESSION
                        ${TFM_BL2_ARGUMENT}
