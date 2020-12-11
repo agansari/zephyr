@@ -1,0 +1,43 @@
+# Private config options for PSA level 1 application
+
+# Copyright (c) 2019,2020 Linaro
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "PSA level 1 sample application"
+
+menu "Application configuration"
+
+module = PSA
+module-str = psa
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu
+
+config PSA_SHELL
+	bool "Enable the 'psa' shell command"
+	depends on SHELL
+	help
+	  Enabling this option will make the 'psa' shell command available.
+
+choice
+	prompt "Private Key"
+
+config PRIVATE_KEY_STATIC
+	bool "Static"
+	help
+	  A static key value will be used for the private key.
+
+config PRIVATE_KEY_RANDOM
+	bool "Random"
+	help
+	  A randomly generated value will be used for the private key.
+
+endchoice
+
+config APPLICATION_THREAD_TIMEOUT
+	int 
+	default 10000
+	help
+	  Threads sleep for 1s, wake up and check for messages.
+
+source "Kconfig.zephyr"

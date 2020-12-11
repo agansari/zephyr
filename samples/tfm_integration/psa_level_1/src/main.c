@@ -18,14 +18,31 @@
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
+#define STACK_SIZE 4000
+#define END_NODE_PRIORITY 		5
+#define PROVISIONING_PRIORITY	6
+#define ROOT_CA_PRIORITY 		7
+
+extern void end_node_entry(void *, void *, void *);
+extern void provisioning_entry(void *, void *, void *);
+extern void root_ca_entry(void *, void *, void *);
+
+K_THREAD_DEFINE(end_node_tid, STACK_SIZE,
+                end_node_entry, NULL, NULL, NULL,
+                END_NODE_PRIORITY, 0, 0);
+K_THREAD_DEFINE(provisioning_tid, STACK_SIZE,
+                provisioning_entry, NULL, NULL, NULL,
+                PROVISIONING_PRIORITY, 0, 0);
+K_THREAD_DEFINE(root_ca_tid, STACK_SIZE,
+				root_ca_entry, NULL, NULL, NULL,
+                ROOT_CA_PRIORITY, 0, 0);
+
+
 /* Create an instance of the system config struct for the application. */
 static struct cfg_data cfg;
 
 void main(void)
 {
-	/* Initialize the TFM NS interface */
-	tfm_ns_interface_init();
-
 	/* Initialise the logger subsys and dump the current buffer. */
 	log_init();
 
