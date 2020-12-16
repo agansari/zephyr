@@ -98,3 +98,22 @@ if (CONFIG_BUILD_WITH_TFM)
 		)
 	endif()
 endif()
+
+if (CONFIG_SLAVE_CORE_MCUX)
+	# Set srec_cat binary name
+	find_program(SREC_CAT srec_cat)
+	if(${SREC_CAT} STREQUAL SREC_CAT-NOTFOUND)
+		message(FATAL_ERROR "'srec_cat' not found. Please install it, or add it to $PATH.")
+	endif()
+
+	#merge tfm_s and zephyr_ns to a single image
+	#offset needs to be the same value as flash_layout.h in TFM
+	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+		COMMAND ${SREC_CAT}
+		ARGS ${CMAKE_BINARY_DIR}/zephyr/${KERNEL_BIN_NAME} -Binary
+			${CMAKE_BINARY_DIR}/openamp_remote-prefix/src/openamp_remote-build/zephyr/${KERNEL_BIN_NAME} -Binary
+			#${CMAKE_BINARY_DIR}/ipm_mcux_remote-prefix/src/ipm_mcux_remote-build/zephyr/${KERNEL_BIN_NAME} -Binary
+			-offset 0x30000 # ${CONFIG_FLASH_LOAD_OFFSET}, core 0 will have 0x0 offset
+			-o ${CMAKE_BINARY_DIR}/multicore.bin -Binary
+	)
+endif()

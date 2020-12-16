@@ -25,9 +25,6 @@
 #include <fsl_common.h>
 #include <fsl_device_registers.h>
 #include <fsl_pint.h>
-#ifdef CONFIG_TRUSTED_EXECUTION_SECURE
-#include <cortex_m/tz.h>
-#endif
 
 /**
  *
@@ -51,6 +48,7 @@ static ALWAYS_INLINE void clock_init(void)
 
 	/* Enable FRO HF(96MHz) output */
 	CLOCK_SetupFROClocking(96000000U);
+    // POWER_SetVoltageForFreq(96000000U);
 
 	/*!< Set FLASH wait states for core */
 	CLOCK_SetFLASHAccessCyclesForFreq(96000000U);
@@ -106,156 +104,6 @@ static ALWAYS_INLINE void clock_init(void)
 }
 
 
-#ifdef CONFIG_TRUSTED_EXECUTION_SECURE
-/* SAU region boundaries */
-#define REGION_0_BASE 0
-#define REGION_0_END 0x0FFFFFFFU
-#define REGION_1_BASE 0x20000000U
-#define REGION_1_END 0xFFFFFFFFU
-#define REGION_2_BASE 0x1000FE00U
-#define REGION_2_END 0x1000FFFFU
-
-void BOARD_InitTrustZone()
-{
-    //####################################################################
-    //### SAU configuration ##############################################
-    //####################################################################
-
-    /* Set SAU Control register: Disable SAU and All Secure */
-    SAU->CTRL = 0;
-
-    /* Set SAU region number */
-    SAU->RNR = 0;
-    /* Region base address */
-    SAU->RBAR = REGION_0_BASE & SAU_RBAR_BADDR_Msk;
-    /* Region end address */
-    SAU->RLAR = ((REGION_0_END & SAU_RLAR_LADDR_Msk) | ((0U << SAU_RLAR_NSC_Pos) & SAU_RLAR_NSC_Msk)) |
-                ((1U << SAU_RLAR_ENABLE_Pos) & SAU_RLAR_ENABLE_Msk);
-
-    /* Set SAU region number */
-    SAU->RNR = 0x00000001U;
-    /* Region base address */
-    SAU->RBAR = REGION_1_BASE & SAU_RBAR_BADDR_Msk;
-    /* Region end address */
-    SAU->RLAR = ((REGION_1_END & SAU_RLAR_LADDR_Msk) | ((0U << SAU_RLAR_NSC_Pos) & SAU_RLAR_NSC_Msk)) |
-                ((1U << SAU_RLAR_ENABLE_Pos) & SAU_RLAR_ENABLE_Msk);
-
-    /* Set SAU region number */
-    SAU->RNR = 0x00000002U;
-    /* Region base address */
-    SAU->RBAR = REGION_2_BASE & SAU_RBAR_BADDR_Msk;
-    /* Region end address */
-    SAU->RLAR = ((REGION_2_END & SAU_RLAR_LADDR_Msk) | ((1U << SAU_RLAR_NSC_Pos) & SAU_RLAR_NSC_Msk)) |
-                ((1U << SAU_RLAR_ENABLE_Pos) & SAU_RLAR_ENABLE_Msk);
-
-    /* Force memory writes before continuing */
-    __DSB();
-    /* Flush and refill pipeline with updated permissions */
-    __ISB();
-    /* Set SAU Control register: Enable SAU and All Secure (applied only if disabled) */
-    SAU->CTRL = 0x00000001U;
-
-    //####################################################################
-    //### AHB Configurations #############################################
-    //####################################################################
-
-    //--------------------------------------------------------------------
-    //--- AHB Security Level Configurations ------------------------------
-    //--------------------------------------------------------------------
-    /* Configuration of AHB Secure Controller
-     * Possible values for every memory sector or peripheral rule:
-     *  0    Non-secure, user access allowed.
-     *  1    Non-secure, privileged access allowed.
-     *  2    Secure, user access allowed.
-     *  3    Secure, privileged access allowed. */
-
-    //--- Security level configuration of memories -----------------------
-    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[0] = 0x00000033U;
-    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[1] = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[2] = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[0]   = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[1]   = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[2]   = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_ROM_MEM_RULE[3]   = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_RAMX[0].MEM_RULE[0]                     = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_RAM0[0].MEM_RULE[0]                     = 0x33333333U;
-    AHB_SECURE_CTRL->SEC_CTRL_RAM0[0].MEM_RULE[1]                     = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_RAM1[0].MEM_RULE[0]                     = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_RAM1[0].MEM_RULE[1]                     = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_RAM2[0].MEM_RULE[0]                     = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_RAM2[0].MEM_RULE[1]                     = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_RAM3[0].MEM_RULE[0]                     = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_RAM3[0].MEM_RULE[1]                     = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_RAM4[0].MEM_RULE[0]                     = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_USB_HS[0].MEM_RULE[0]                   = 0;
-
-    //--- Security level configuration of peripherals --------------------
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL0 = 0x00000033U;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL1 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL2 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL0 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL1 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL2 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL3 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT8_SLAVE0_RULE                        = 0x03000000U;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT8_SLAVE1_RULE                        = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT9_SLAVE0_RULE                        = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT9_SLAVE1_RULE                        = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT10[0].SLAVE0_RULE                    = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT10[0].SLAVE1_RULE                    = 0;
-
-    //--- Security level configuration of masters ------------------------
-    AHB_SECURE_CTRL->MASTER_SEC_LEVEL        = 0;
-    AHB_SECURE_CTRL->MASTER_SEC_ANTI_POL_REG = 0x3FFFFFFFU;
-
-    //--------------------------------------------------------------------
-    //--- Pins: Reading GPIO state ---------------------------------------
-    //--------------------------------------------------------------------
-    // Possible values for every pin:
-    //  0b0    Deny
-    //  0b1    Allow
-    //--------------------------------------------------------------------
-    AHB_SECURE_CTRL->SEC_GPIO_MASK0 = 0xFFFFFFFFU;
-    AHB_SECURE_CTRL->SEC_GPIO_MASK1 = 0xFFFFFFFFU;
-
-    //--------------------------------------------------------------------
-    //--- Interrupts: Interrupt handling by Core1 ------------------------
-    //--------------------------------------------------------------------
-    // Possible values for every interrupt:
-    //  0b0    Deny
-    //  0b1    Allow
-    //--------------------------------------------------------------------
-    AHB_SECURE_CTRL->SEC_CPU_INT_MASK0 = 0xFFFFFFFFU;
-    AHB_SECURE_CTRL->SEC_CPU_INT_MASK1 = 0xFFFFFFFFU;
-
-    //--------------------------------------------------------------------
-    //--- Interrupts: Interrupt security configuration -------------------
-    //--------------------------------------------------------------------
-    // Possible values for every interrupt:
-    //  0b0    Secure
-    //  0b1    Non-secure
-    //--------------------------------------------------------------------
-    NVIC->ITNS[0] = 0;
-    NVIC->ITNS[1] = 0;
-
-    //--------------------------------------------------------------------
-    //--- Global Options -------------------------------------------------
-    //--------------------------------------------------------------------
-    SCB->AIRCR = (SCB->AIRCR & 0x000009FF7U) | 0x005FA0000U;
-    SCB->SCR &= 0x0FFFFFFF7U;
-    SCB->SHCSR &= 0x0FFF7FFFFU;
-    SCB->NSACR                               = 0x00000C03U;
-    SCnSCB->CPPWR                            = 0;
-    AHB_SECURE_CTRL->SEC_MASK_LOCK           = 0x00000AAAU;
-    AHB_SECURE_CTRL->MASTER_SEC_LEVEL        = (AHB_SECURE_CTRL->MASTER_SEC_LEVEL & 0x03FFFFFFFU) | 0x080000000U;
-    AHB_SECURE_CTRL->MASTER_SEC_ANTI_POL_REG = (AHB_SECURE_CTRL->MASTER_SEC_ANTI_POL_REG & 0x03FFFFFFFU) | 0x080000000U;
-    AHB_SECURE_CTRL->CPU0_LOCK_REG           = 0x800002AAU;
-    AHB_SECURE_CTRL->CPU1_LOCK_REG           = 0x8000000AU;
-    AHB_SECURE_CTRL->MISC_CTRL_REG           = (AHB_SECURE_CTRL->MISC_CTRL_REG & 0x0FFFF0003U) | 0x00000AAA4U;
-    AHB_SECURE_CTRL->MISC_CTRL_DP_REG        = 0x0000AAA5U;
-}
-#endif
-
 void z_platform_init(void)
 {
 #if ((__FPU_PRESENT == 1) && (__FPU_USED == 1))
@@ -296,12 +144,12 @@ void z_platform_init(void)
  * @return 0
  */
 
-static int nxp_lpc55xxx_init(const struct device *arg)
+static int32_t nxp_lpc55xxx_init(const struct device *arg)
 {
 	ARG_UNUSED(arg);
 
 	/* old interrupt lock level */
-	unsigned int oldLevel;
+	uint32_t oldLevel;
 
 	/* disable interrupts */
 	oldLevel = irq_lock();
@@ -332,11 +180,8 @@ SYS_INIT(nxp_lpc55xxx_init, PRE_KERNEL_1, 0);
 
 #ifdef CONFIG_SLAVE_CORE_MCUX
 
-#define SLAVE_CORE_BOOT_ADDRESS (void *)CONFIG_SLAVE_BOOT_ADDRESS_MCUX
-
-static const char slave_core[] = {
-#include "slave-core.inc"
-};
+// #define THE_BOOT_ADDR (DT_REG_ADDR(DT_CHOSEN(zephyr_code_cpu1_partition)))
+#define THE_BOOT_ADDR (0x30000)
 
 /**
  *
@@ -346,14 +191,9 @@ static const char slave_core[] = {
  * @return N/A
  */
 /* This function is also called at deep sleep resume. */
-int _slave_init(struct device *arg)
+static int32_t _slave_init(struct device *arg)
 {
 	ARG_UNUSED(arg);
-
-#define THE_BOOT_ADDR (DT_REG_ADDR(DT_CHOSEN(zephyr_code_cpu1_partition)))
-// #define THE_BOOT_ADDR (char*)(CONFIG_SLAVE_BOOT_ADDRESS_MCUX)
-
-	// memcpy((void *)THE_BOOT_ADDR, (void *)slave_core, sizeof(slave_core));
 
 	/* Setup the reset handler pointer (PC) and stack pointer value.
 	 * This is used once the second core runs its startup code.
@@ -366,7 +206,7 @@ int _slave_init(struct device *arg)
     SYSCON->CPUCFG |= SYSCON_CPUCFG_CPU1ENABLE_MASK;
 
 	/* Boot source for Core 1 from RAM */
-	SYSCON->CPBOOT = SYSCON_CPBOOT_CPBOOT(*(uint32_t *)((char*)(THE_BOOT_ADDR+0x0)));
+	SYSCON->CPBOOT = SYSCON_CPBOOT_CPBOOT(THE_BOOT_ADDR);
 
     /* Boot source for Core 1 from flash */
     // SYSCON->CPBOOT = SYSCON_CPBOOT_CPBOOT(*(uint32_t *)DT_REG_ADDR(DT_CHOSEN(zephyr_code_cpu1_partition)));
@@ -385,59 +225,7 @@ SYS_INIT(_slave_init, PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 
 #endif /*CONFIG_SLAVE_CORE_MCUX*/
 
-#ifdef CONFIG_NS_IMAGE_BOOT
-
-#ifdef CONFIG_TRUSTED_EXECUTION_SECURE
-
-#define NS_STACK_ADDRESS (DT_REG_ADDR(DT_CHOSEN(zephyr_code_non_secure_partition)))
-#define NS_BOOT_ADDRESS  ((uint8_t*)NS_STACK_ADDRESS+0x04)
-
-int _ns_init(struct device *arg)
-{
-	ARG_UNUSED(arg);
-	tz_ns_func_ptr_t ResetHandler_ns;
-
-	printk("Hello my baby!...");
-
-	__TZ_set_MSP_NS(*((uint32_t *)(NS_STACK_ADDRESS)));
-
-	SCB_NS->VTOR = (uint32_t)NS_STACK_ADDRESS;
-
-	ResetHandler_ns = (tz_ns_func_ptr_t)(*((uint32_t *)((NS_STACK_ADDRESS) + 4U))&0xFFFFFFFE);
-
-	printk("Over to you!\n");
-
-	ResetHandler_ns();
-
-	// int32_t i;
-	// uint32_t* second_image = (uint32_t*)NS_STACK_ADDRESS;
-	// for (i=0;i<100;i++) {
-	// 	printk("0x%08x\n",second_image[i]);
-	// }
-
-	return 0;
-}
-#endif //CONFIG_TRUSTED_EXECUTION_SECURE
-
-
-#ifdef CONFIG_TRUSTED_EXECUTION_NONSECURE
-int _ns_init(struct device *arg)
-{
-	ARG_UNUSED(arg);
-
-	printk("Hello my darling!\n");
-
-	return 0;
-}
-#endif //CONFIG_TRUSTED_EXECUTION_NONSECURE
-
-
-SYS_INIT(_ns_init, POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
-
-#endif /*CONFIG_NS_IMAGE_BOOT*/
-
-
-#if defined(CONFIG_TRUSTED_EXECUTION_NONSECURE)
+#if defined(CONFIG_SOC_LPC55S69_CPU1)
 
 #include <zephyr.h>
 #include <device.h>
@@ -448,7 +236,7 @@ SYS_INIT(_ns_init, POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 #define SLEEP_TIME_MS   1000
 
 /* The devicetree node identifier for the "led0" alias. */
-#define LED0_NODE DT_ALIAS(led1)
+#define LED0_NODE DT_ALIAS(led2) //blue led allocated to core 1
 
 #if DT_NODE_HAS_STATUS(LED0_NODE, okay)
 #define LED0	DT_GPIO_LABEL(LED0_NODE, gpios)
@@ -467,11 +255,11 @@ SYS_INIT(_ns_init, POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 #define FLAGS	0
 #endif
 
-int _slave_blink(struct device *arg)
+int32_t _slave_blink(struct device *arg)
 {
 	struct device *dev;
-	bool led_is_on = false;
-	int ret;
+	int32_t ret;
+    int32_t i;
 
 	dev = device_get_binding(LED0);
 	if (dev == NULL) {
@@ -483,11 +271,14 @@ int _slave_blink(struct device *arg)
 		return 0;
 	}
 
-	gpio_pin_set(dev, PIN, (int)led_is_on);
+	for (i = 0; i<5; i++) {
+		gpio_pin_set(dev, PIN, i&1);
+		k_busy_wait(SLEEP_TIME_MS*1000);
+	}
 
 	return 0;
 }
 
-SYS_INIT(_slave_blink, PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+// SYS_INIT(_slave_blink, PRE_KERNEL_2, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 
 #endif

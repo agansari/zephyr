@@ -5,6 +5,8 @@
 
 #include <init.h>
 #include <drivers/pinmux.h>
+#include <device.h>
+#include <devicetree.h>
 #include <fsl_common.h>
 #include <fsl_iocon.h>
 #include <soc.h>
@@ -153,6 +155,10 @@ static int lpcxpresso_55s69_pinmux_init(const struct device *dev)
 				  IOCON_PIO_SLEW_STANDARD |
 				  IOCON_PIO_OPENDRAIN_DI);
 #endif
+
+// #define THE_BOOT_ADDR DT_CHOSEN_zephyr_code_cpu1_partition
+
+// printk("\n\nTHE_BOOT_ADDR = 0x%x\n\n",THE_BOOT_ADDR);
 
 	return 0;
 }
