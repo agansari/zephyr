@@ -22,32 +22,30 @@ LOG_MODULE_REGISTER(end_node);
 /* Create an instance of the system config struct for the application. */
 static struct cfg_data cfg;
 
-void send_provisioning_msg()
+void send_provisioning_msg(uint32_t type, char* buffer, uint32_t receive_size)
 {
     struct k_mbox_msg send_msg;
 
-    /* generate random value to send */
-    uint32_t random_value = 27;
-
     /* prepare to send empty message */
-    send_msg.info = random_value;
+    send_msg.info = type;
     send_msg.size = 0;
     send_msg.tx_data = NULL;
     send_msg.tx_block.data = NULL;
     send_msg.tx_target_thread = provisioning_tid;
 
     /* send message and wait until a consumer receives it */
+    LOG_INF("send_provisioning_msg %u <<", type);
     k_mbox_put(&end_node_mailbox, &send_msg, K_FOREVER);
-    LOG_INF("send_provisioning_msg");
 }
 
-void get_provisioning_msg()
+/*  input buffer[size]
+    return message type */
+uint32_t get_provisioning_msg(char* buffer, size_t size)
 {
     struct k_mbox_msg recv_msg;
-    char buffer[10000];
 
     /* prepare to receive message */
-    recv_msg.size = 10000;
+    recv_msg.size = size;
     recv_msg.rx_source_thread = provisioning_tid;
 
     /* get message, but not its data */
@@ -56,20 +54,27 @@ void get_provisioning_msg()
     /* get message data for only certain types of messages */
     /* retrieve message data and delete the message */
     k_mbox_data_get(&recv_msg, buffer);
-    LOG_INF("get_provisioning_msg");
+    LOG_INF("get_provisioning_msg %u <<", recv_msg.info);
+
+    return recv_msg.info;
 }
 
 
 void end_node_entry(void *dummy1, void *dummy2, void *dummy3)
 {
+    msg_types info_type;
+    char buffer[100] = {99,88,77};
     LOG_INF("Thread started.");
 
     // wait to get initialization commands
-    get_provisioning_msg();
-    send_provisioning_msg();//Send ACK
+    info_type = get_provisioning_msg(NULL, 0);
+    if (info_type == ARE_YOU_UP) {
+        /* Initialize the TFM NS interface */
+        tfm_ns_interface_init();
 
-	/* Initialize the TFM NS interface */
-	tfm_ns_interface_init();
+        /* When done, send ACK, we are up */
+        send_provisioning_msg(ACK, NULL, 0);
+    }
 
 	/* Load app config struct from secure storage (create if missing). */
 	if (cfg_load_data(&cfg)) {

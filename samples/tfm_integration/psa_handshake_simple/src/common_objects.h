@@ -16,3 +16,9 @@ extern struct k_thread root_ca;
 extern k_tid_t end_node_tid;
 extern k_tid_t provisioning_tid;
 extern k_tid_t root_ca_tid;
+
+typedef enum {
+    NACK,
+    ACK,
+    ARE_YOU_UP,
+} msg_types;

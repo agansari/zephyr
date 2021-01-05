@@ -9,6 +9,7 @@
 
 #include "psa/error.h"
 #include "psa/protected_storage.h"
+#include "psa/internal_trusted_storage.h"
 #include "util_app_cfg.h"
 #include "util_app_log.h"
 
@@ -42,7 +43,7 @@ psa_status_t cfg_create_data(void)
 	 * call which also creates the secure storage record if necessary,
 	 * but precludes the use of psa_ps_set_extended.
 	 */
-	status = psa_ps_set(cfg_data_uid, sizeof(cfg_data_dflt),
+	status = psa_its_set(cfg_data_uid, sizeof(cfg_data_dflt),
 			    (void *)&cfg_data_dflt, 0);
 	if (status) {
 		goto err;
@@ -60,12 +61,15 @@ psa_status_t cfg_load_data(struct cfg_data *p_cfg_data)
 	memset(&p_info, 0, sizeof(p_info));
 
 	/* Check if the config record exists, if not create it. */
-	status = psa_ps_get_info(cfg_data_uid, &p_info);
+	status = psa_its_get_info(cfg_data_uid, &p_info);
 	if (status == PSA_ERROR_DOES_NOT_EXIST) {
+		LOG_INF("----------------------app_cfg: New file");
 		/* Create a new config file. */
 		status = cfg_create_data();
 		/* Copy default values to the cfg_data placeholder. */
 		memcpy(p_cfg_data, &cfg_data_dflt, sizeof(cfg_data_dflt));
+	} else {
+		LOG_INF("----------------------app_cfg: using old file");
 	}
 	if (status) {
 		goto err;

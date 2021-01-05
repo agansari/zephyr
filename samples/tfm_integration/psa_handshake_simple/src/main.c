@@ -42,20 +42,12 @@ void main(void)
 	/* Initialise the logger subsys and dump the current buffer. */
 	log_init();
 
-	LOG_INF(">>>>> Begn main initialization <<<<<");
+	LOG_INF(">>>>> Begin main initialization <<<<<");
 
 	/* provisioning thread is the main thread that starts the process and
 	handles end-node <-> root-ca interactions. Provisioning thread is the
 	equivalent to a user terminal that connects another device to a cloud.
 	*/
-
-	/* end-node needs to handle all the communications with the secure side. */
-	end_node_tid = k_thread_create(&end_node, end_node_stack,
-								STACK_SIZE,
-								(k_thread_entry_t)end_node_entry,
-								NULL, NULL, NULL,
-								K_PRIO_COOP(END_NODE_PRIORITY),
-								0, K_NO_WAIT);
 
 	provisioning_tid = k_thread_create(&provisioning, provisioning_stack,
 								STACK_SIZE,
@@ -69,6 +61,14 @@ void main(void)
 								(k_thread_entry_t)root_ca_entry,
 								NULL, NULL, NULL,
 								K_PRIO_COOP(ROOT_CA_PRIORITY),
+								0, K_NO_WAIT);
+
+	/* end-node needs to handle all the communications with the secure side. */
+	end_node_tid = k_thread_create(&end_node, end_node_stack,
+								STACK_SIZE,
+								(k_thread_entry_t)end_node_entry,
+								NULL, NULL, NULL,
+								K_PRIO_COOP(END_NODE_PRIORITY),
 								0, K_NO_WAIT);
 
 	while(1){
