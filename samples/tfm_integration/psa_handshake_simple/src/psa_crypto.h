@@ -21,7 +21,7 @@ void crp_test_sha256(void);
 /**
  * @brief Runs a series of PSA Cryptography API test functions.
  */
-void crp_test(void);
+void crp_test(uint8_t* priv_key_data);
 
 #ifdef __cplusplus
 }

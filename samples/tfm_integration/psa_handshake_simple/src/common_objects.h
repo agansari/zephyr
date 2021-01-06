@@ -21,4 +21,6 @@ typedef enum {
     NACK,
     ACK,
     ARE_YOU_UP,
+    GIVE_YOURSELF_A_KEY,
+    HERES_YOUR_CSR
 } msg_types;

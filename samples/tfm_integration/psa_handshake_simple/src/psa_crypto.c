@@ -412,7 +412,7 @@ err:
 	return status;
 }
 
-void crp_test(void)
+void crp_test(uint8_t* priv_key_data)
 {
 	psa_status_t status;
 	uint8_t msg[] = "Please hash and sign this message.";
@@ -420,26 +420,6 @@ void crp_test(void)
 	size_t hash_len;
 	uint8_t sig[PSA_VENDOR_ECDSA_SIGNATURE_MAX_SIZE] = { 0 };
 	size_t sig_len;
-
-	/* prime256v1 (ecdsa-with-SHA256) private key. */
-#if CONFIG_PRIVATE_KEY_STATIC
-	/* This value is based on the private key in user.pem,
-	 * which can be viewed viw the following command:
-	 *
-	 *   $ openssl ec -in user.pem -text -noout
-	 */
-	uint8_t priv_key_data[32] = {
-		0x14, 0xbc, 0xb9, 0x53, 0xa4, 0xee, 0xed, 0x50,
-		0x09, 0x36, 0x92, 0x07, 0x1d, 0xdb, 0x24, 0x2c,
-		0xef, 0xf9, 0x57, 0x92, 0x40, 0x4f, 0x49, 0xaa,
-		0xd0, 0x7c, 0x5b, 0x3f, 0x26, 0xa7, 0x80, 0x48
-	};
-#else
-	/* Randomly generate the private key. */
-	uint8_t priv_key_data[32] = { 0 };
-
-	psa_generate_random(priv_key_data, sizeof(priv_key_data));
-#endif
 
 	/* Initialize crypto API. */
 	status = al_psa_status(psa_crypto_init(), __func__);

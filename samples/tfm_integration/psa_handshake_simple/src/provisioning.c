@@ -65,6 +65,14 @@ void provisioning_entry(void *p1, void *p2, void *p3)
     }
 
     /* Send 'Provision Device' command to end-node. */
+    send_end_node(GIVE_YOURSELF_A_KEY, NULL, 0);
+    info_type = get_end_node(NULL, 0);
+    if (info_type == ACK) {
+        LOG_INF("end_node generated a private key.");
+    } else {
+        LOG_INF("end_node can't generate a private key.");
+    }
+
     //message starting provisioning
     //wait for CSR binary blob
 

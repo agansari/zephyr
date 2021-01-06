@@ -63,17 +63,22 @@ uint32_t get_provisioning_msg(char* buffer, size_t size)
 void end_node_entry(void *dummy1, void *dummy2, void *dummy3)
 {
     msg_types info_type;
+    enum tfm_status_e tfm_status;
     char buffer[100] = {99,88,77};
     LOG_INF("Thread started.");
 
-    // wait to get initialization commands
+    /* wait to get initialization commands */
     info_type = get_provisioning_msg(NULL, 0);
     if (info_type == ARE_YOU_UP) {
         /* Initialize the TFM NS interface */
-        tfm_ns_interface_init();
+        tfm_status = tfm_ns_interface_init();
 
         /* When done, send ACK, we are up */
-        send_provisioning_msg(ACK, NULL, 0);
+        if (TFM_SUCCESS == tfm_status) {
+            send_provisioning_msg(ACK, NULL, 0);
+        } else {
+            send_provisioning_msg(NACK, NULL, 0);
+        }
     }
 
 	/* Load app config struct from secure storage (create if missing). */
@@ -82,10 +87,32 @@ void end_node_entry(void *dummy1, void *dummy2, void *dummy3)
 	}
 
 	/* Get the entity attestation token (requires ~1kB stack memory!). */
-	att_test();
+	// att_test();
 
-	/* Crypto tests */
-	crp_test();
+    info_type = get_provisioning_msg(NULL, 0);
+    if (info_type == GIVE_YOURSELF_A_KEY) {
+        LOG_INF("GIVE_YOURSELF_A_KEY <<");
+	    /* Randomly generate the private key. */
+	    uint8_t priv_key_data[32] = { 0 };
+	    tfm_status = psa_generate_random(priv_key_data, sizeof(priv_key_data));
+        LOG_INF("priv_key_data %x %x %x %x <<", priv_key_data[0],priv_key_data[1],priv_key_data[2],priv_key_data[3]);
+
+        if (TFM_SUCCESS == tfm_status) {
+            //this does not actually works
+            tfm_status = psa_ps_set(cfg.magic, sizeof(priv_key_data),
+                        (void *)priv_key_data, 0);
+
+            if (TFM_SUCCESS == tfm_status)
+            send_provisioning_msg(ACK, NULL, 0);
+        } else {
+            send_provisioning_msg(NACK, NULL, 0);
+        }
+
+        /* Crypto tests */
+	    crp_test(priv_key_data);
+    } else {
+        LOG_INF("No give a key mssg? <<");
+    }
 
     while (1){
 
